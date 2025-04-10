@@ -1,0 +1,40 @@
+# Dependências do Node.js
+/node_modules
+/.pnp
+.pnp.js
+
+# Diretórios de build
+dist/
+build/
+
+# Arquivos de ambiente
+.env
+.env.local
+.env.*.local
+
+# Cache do npm e yarn
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# IDEs e editores
+.vscode/
+
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Testes
+/coverage
+*.lcov
+
+# Outros
+#*.tgz
+#*.lock-wscript
+#.eslintcache
+#.parcel-cache
+#*.tsbuildinfo
