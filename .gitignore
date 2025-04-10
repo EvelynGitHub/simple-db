@@ -38,3 +38,4 @@ Thumbs.db
 #.eslintcache
 #.parcel-cache
 #*.tsbuildinfo
+out
