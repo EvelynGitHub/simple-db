@@ -12,10 +12,22 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "simpleDbExplorer",
+          "name": "SimpleDB"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "simple-db.helloWorld",
-        "title": "Hello World"
+        "command": "simpledb.connectDatabase",
+        "title": "Conecte no Database"
+      },
+      {
+        "command": "simpledb.executeQuery",
+        "title": "Execute SQL Query"
       }
     ]
   },
