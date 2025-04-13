@@ -13,26 +13,26 @@
   "main": "./out/extension.js",
   "contributes": {
     "views": {
-      "simpleDbExplorer": [
+      "simpleDb": [
         {
-          "id": "databasesView",
-          "name": "Databases"
+          "id": "simpleDbExplorer",
+          "name": "Bancos de dados"
         }
       ]
     },
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "simpleDbExplorer",
-          "title": "DB Explorer",
+          "id": "simpleDb",
+          "title": "Simple DB",
           "icon": "media/database.svg"
         }
       ]
     },
     "commands": [
       {
-        "command": "simpleDbExplorer.connectDatabase",
-        "title": "Conecte no Database"
+        "command": "simple-db.connectDatabase",
+        "title": "Simple DB: Conectar ao banco de dados"
       },
       {
         "command": "simpleDbExplorer.executeQuery",
@@ -41,7 +41,8 @@
     ]
   },
   "activationEvents": [
-    "onCommand:simpleDbExplorer.connectDatabase"
+    "onView: simpleDbExplorer",
+    "onCommand:simple-db.connectDatabase"
   ],
   "scripts": {
     "vscode:prepublish": "npm run compile",
