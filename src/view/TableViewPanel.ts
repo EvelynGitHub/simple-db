@@ -20,6 +20,36 @@ export class TableViewPanel {
       panel.webview.html = TableViewPanel.getHtmlForTable(rows, dbName, tableName);
     }
 
+    async function updateData(primaryKey: string, primaryKeyValue: any, data: any) {
+      try {
+        await connectionManager.updateRow(dbName, tableName, primaryKey, primaryKeyValue, data);
+        vscode.window.showInformationMessage('Registro atualizado com sucesso!');
+        await loadData();
+      } catch (error: any) {
+        vscode.window.showErrorMessage('Erro ao atualizar: ' + error.message);
+      }
+    }
+
+    async function insertData(primaryKey: string, primaryKeyValue: any, data: any) {
+      try {
+        await connectionManager.insertRow(dbName, tableName, primaryKey, primaryKeyValue, data);
+        vscode.window.showInformationMessage('Registro inserido com sucesso');
+        await loadData();
+      } catch (error: any) {
+        vscode.window.showErrorMessage('Erro ao inserir: ' + error.message);
+      }
+    }
+
+    async function deleteData(primaryKey: string, primaryKeyValue: any) {
+      try {
+        await connectionManager.deleteRow(dbName, tableName, primaryKey, primaryKeyValue);
+        vscode.window.showInformationMessage('Registro deletado com sucesso');
+        await loadData();
+      } catch (error: any) {
+        vscode.window.showErrorMessage('Erro ao deletar: ' + error.message);
+      }
+    }
+
     loadData();
 
     panel.webview.onDidReceiveMessage(async message => {
@@ -33,50 +63,15 @@ export class TableViewPanel {
       }
 
       if (message.command === 'updateRow') {
-        try {
-          await connectionManager.updateRow(dbName, tableName, message.primaryKey, message.primaryKeyValue, message.data);
-          vscode.window.showInformationMessage('Registro atualizado com sucesso!');
-          await loadData();
-        } catch (error: any) {
-          vscode.window.showErrorMessage('Erro ao atualizar: ' + error.message);
-        }
+        await updateData(message.primaryKey, message.primaryKeyValue, message.data);
       }
 
       if (message.command === 'insertRow') {
-        const data = message.data;
-        const columns = Object.keys(data).join(', ');
-        const placeholders = Object.keys(data).map(_ => '?').join(', ');
-        const values = Object.values(data);
-
-        const db = ConnectionManager.getInstance().getDatabase(dbName);
-        db.run(
-          `INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`,
-          values,
-          (err) => {
-            if (err) {
-              vscode.window.showErrorMessage('Erro ao inserir: ' + err.message);
-            } else {
-              vscode.window.showInformationMessage('Registro inserido com sucesso');
-            }
-          }
-        );
+        await insertData(message.primaryKey, message.primaryKeyValue, message.data);
       }
 
       if (message.command === 'deleteRow') {
-        const { primaryKey, primaryKeyValue } = message;
-
-        const db = ConnectionManager.getInstance().getDatabase(dbName);
-        db.run(
-          `DELETE FROM ${tableName} WHERE ${primaryKey} = ?`,
-          [primaryKeyValue],
-          (err) => {
-            if (err) {
-              vscode.window.showErrorMessage('Erro ao deletar: ' + err.message);
-            } else {
-              vscode.window.showInformationMessage('Registro deletado com sucesso');
-            }
-          }
-        );
+        await deleteData(message.primaryKey, message.primaryKeyValue);
       }
     });
 
@@ -84,8 +79,7 @@ export class TableViewPanel {
 
   private static getHtmlForTable(rows: any[], dbName: string, tableName: string): string {
     if (rows.length === 0) {
-      // return `<h3>Nenhum registro encontrado em ${tableName}</h3>`;
-      return `<html><body><h3>Nenhum dado encontrado</h3></body></html>`;
+      return `<html><body><h3>Nenhum dado encontrado em ${tableName}</h3></body></html>`;
     }
 
     const headers = Object.keys(rows[0]);
@@ -109,7 +103,7 @@ export class TableViewPanel {
         <style>
           table { border-collapse: collapse; width: 100%; }
           th, td { border: 1px solid #ddd; padding: 8px; }
-          th { background-color: #f2f2f2; }
+          th { background-color: #bbb; color: black; }
           button { margin: 2px; }
         </style>
       </head>
@@ -119,8 +113,8 @@ export class TableViewPanel {
           <input id="searchInput" type="text" placeholder="Buscar..." />
           <button onclick="search()">Buscar</button>
           <button onclick="refresh()">🔄 Atualizar</button>
+          <button onclick="insertRow()">Inserir Novo</button>
         </div>
-        <button onclick="insertRow()">Inserir Novo</button>
         <table>
           <thead><tr>${headerHtml}<th>Ações</th> </tr></thead>
           <tbody>${rowsHtml}</tbody>

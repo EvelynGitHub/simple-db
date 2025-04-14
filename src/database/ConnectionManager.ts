@@ -157,4 +157,38 @@ export class ConnectionManager {
             });
         });
     }
+
+    async insertRow(dbName: string, tableName: string, primaryKeyColumn: string, primaryKeyValue: any, data: any): Promise<any[]> {
+        const columns = Object.keys(data).join(', ');
+        const placeholders = Object.keys(data).map(_ => '?').join(', ');
+        const values = Object.values(data);
+
+        const db = this.getDatabase(dbName);
+        const sql = `INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`;
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, values, function (err: Error | null, rows: any) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows);
+                }
+            });
+        });
+    }
+
+    async deleteRow(dbName: string, tableName: string, primaryKeyColumn: string, primaryKeyValue: any): Promise<any[]> {
+        const db = this.getDatabase(dbName);
+        const sql = `DELETE FROM ${tableName} WHERE ${primaryKeyColumn} = ?`;
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, [primaryKeyValue], function (err: Error | null, rows: any) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows);
+                }
+            });
+        });
+    }
 }
