@@ -73,16 +73,82 @@ export class ConnectionManager {
         });
     }
 
-    async getAllRows(dbName: string, tableName: string): Promise<any[]> {
-        const db = this.getConnection(dbName);
-        if (!db) {
-            throw new Error('Banco de dados não encontrado');
-        }
+    async getAllRows(dbName: string, tableName: string, searchText?: string): Promise<any[]> {
+        // const db = this.getConnection(dbName);
+        // if (!db) {
+        //     throw new Error('Banco de dados não encontrado');
+        // }
 
-        const sql = `SELECT * FROM ${tableName}`;
+        // const sql = `SELECT * FROM ${tableName}`;
+
+        // return new Promise((resolve, reject) => {
+        //     db.all(sql, [], (err, rows) => {
+        //         if (err) {
+        //             reject(err);
+        //         } else {
+        //             resolve(rows);
+        //         }
+        //     });
+        // });
 
         return new Promise((resolve, reject) => {
-            db.all(sql, [], (err, rows) => {
+            const db = this.getDatabase(dbName);
+            if (!db) {
+                reject(new Error(`Banco de dados ${dbName} não encontrado.`));
+                return;
+            }
+
+            let query = `SELECT * FROM ${tableName}`;
+            const params: any[] = [];
+
+            if (searchText) {
+                query += ' WHERE ';
+                query += '( ' + '1=0 ';
+
+                db.all(`PRAGMA table_info(${tableName})`, [], (err, columns) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    columns.forEach((col: any) => {
+                        query += ` OR ${col.name} LIKE ?`;
+                        params.push(`%${searchText}%`);
+                    });
+
+                    query += ')';
+
+                    db.all(query, params, (err2, rows) => {
+                        if (err2) {
+                            reject(err2);
+                        } else {
+                            resolve(rows);
+                        }
+                    });
+                });
+            } else {
+                db.all(query, params, (err, rows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(rows);
+                    }
+                });
+            }
+        });
+    }
+
+    async updateRow(dbName: string, tableName: string, primaryKeyColumn: string, primaryKeyValue: any, data: any): Promise<any[]> {
+        const sets = Object.keys(data).map(key => `${key} = ?`).join(', ');
+        const values = Object.values(data);
+
+        values.push(primaryKeyValue);
+
+        const db = this.getDatabase(dbName);
+        const sql = `UPDATE ${tableName} SET ${sets} WHERE ${primaryKeyColumn} = ?`;
+
+        return new Promise((resolve, reject) => {
+            db.run(sql, values, function (err: Error | null, rows: any) {
                 if (err) {
                     reject(err);
                 } else {
