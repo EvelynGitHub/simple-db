@@ -21,7 +21,6 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
         }),
 
         vscode.commands.registerCommand('simple-db.openTable', async (tableItem: TableItem) => {
-            console.log("nome da tabela: ", tableItem.tableName);
             if (tableItem) {
                 await TableViewPanel.showTable(tableItem.dbName, tableItem.tableName);
             }

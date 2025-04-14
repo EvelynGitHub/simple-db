@@ -3,7 +3,17 @@ import * as sqlite3 from 'sqlite3';
 import * as path from 'path';
 
 export class ConnectionManager {
+    private static instance: ConnectionManager;
     private connections: Map<string, sqlite3.Database> = new Map();
+
+    private constructor() { }
+
+    public static getInstance(): ConnectionManager {
+        if (!ConnectionManager.instance) {
+            ConnectionManager.instance = new ConnectionManager();
+        }
+        return ConnectionManager.instance;
+    }
 
     getConnection(dbName: string): sqlite3.Database | undefined {
         return this.connections.get(dbName);
@@ -39,7 +49,7 @@ export class ConnectionManager {
         });
     }
 
-    async getColumns(dbName: string, tableName: string): Promise<string[]> {
+    async getColumns(dbName: string, tableName: string): Promise<any[]> {
         const db = this.getConnection(dbName);
         if (!db) {
             return [];
@@ -64,7 +74,7 @@ export class ConnectionManager {
         const sql = `SELECT * FROM ${tableName}`;
 
         return new Promise((resolve, reject) => {
-            db.all(sql, (err, rows) => {
+            db.all(sql, [], (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {

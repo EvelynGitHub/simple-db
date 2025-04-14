@@ -4,6 +4,8 @@ import { ConnectionManager } from '../database/ConnectionManager';
 
 export class TableViewPanel {
     public static async showTable(dbName: string, tableName: string) {
+        console.log(`Abrindo table: ${tableName} do database: ${dbName}`);
+
         const panel = vscode.window.createWebviewPanel(
             'simpleDbTableView',
             `Tabela: ${tableName}`,
@@ -13,8 +15,10 @@ export class TableViewPanel {
             }
         );
 
-        const connectionManager = new ConnectionManager();
+        const connectionManager = ConnectionManager.getInstance();
         const rows = await connectionManager.getAllRows(dbName, tableName);
+
+        console.log(`Rows: ${JSON.stringify(rows)}`);
 
         panel.webview.html = TableViewPanel.getHtmlContent(tableName, rows);
     }
