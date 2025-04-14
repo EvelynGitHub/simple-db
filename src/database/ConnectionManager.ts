@@ -19,6 +19,14 @@ export class ConnectionManager {
         return this.connections.get(dbName);
     }
 
+    public getDatabase(dbName: string): sqlite3.Database {
+        const db = this.connections.get(dbName);
+        if (!db) {
+            throw new Error('Banco de dados não encontrado');
+        }
+        return db;
+    }
+
     async connect(databasePath: string): Promise<string> {
         return new Promise((resolve, reject) => {
             const db = new sqlite3.Database(databasePath, (err) => {
