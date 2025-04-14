@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { DatabaseTreeProvider } from '../tree/DatabaseTreeProvider';
+import { TableItem } from '../tree/TableItem';
+import { TableViewPanel } from '../view/TableViewPanel';
 
 export function RegisterCommands(context: vscode.ExtensionContext, treeProvider: DatabaseTreeProvider) {
 
@@ -15,6 +17,13 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
 
             if (uri && uri[0]) {
                 await treeProvider.connect(uri[0].fsPath);
+            }
+        }),
+
+        vscode.commands.registerCommand('simple-db.openTable', async (tableItem: TableItem) => {
+            console.log("nome da tabela: ", tableItem.tableName);
+            if (tableItem) {
+                await TableViewPanel.showTable(tableItem.dbName, tableItem.tableName);
             }
         })
     );

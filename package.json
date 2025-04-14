@@ -37,8 +37,21 @@
       {
         "command": "simpleDbExplorer.executeQuery",
         "title": "Execute SQL Query"
+      },
+      {
+        "command": "simple-db.openTable",
+        "title": "Abrir Tabela"
       }
-    ]
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "simple-db.openTable",
+          "when": "viewItem == tableItem",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "activationEvents": [
     "onView: simpleDbExplorer",

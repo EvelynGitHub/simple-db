@@ -54,4 +54,23 @@ export class ConnectionManager {
             });
         });
     }
+
+    async getAllRows(dbName: string, tableName: string): Promise<any[]> {
+        const db = this.getConnection(dbName);
+        if (!db) {
+            throw new Error('Banco de dados não encontrado');
+        }
+
+        const sql = `SELECT * FROM ${tableName}`;
+
+        return new Promise((resolve, reject) => {
+            db.all(sql, (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows);
+                }
+            });
+        });
+    }
 }
