@@ -1,4 +1,4 @@
-# ![Simple DB Logo](./media/logo.png)  
+# ![Simple DB Logo](https://github.com/EvelynGitHub/simple-db/blob/main/media/logo.png)  
 # Simple DB – VSCode Extension
 
 Extensão para Visual Studio Code para explorar e manipular bancos de dados locais de forma simples e prática.
@@ -11,7 +11,7 @@ Extensão para Visual Studio Code para explorar e manipular bancos de dados loca
 
 ### Via `.vsix` (Instalação Local)
 
-1. Clone o repositório ou baixe o `.vsix` gerado [aqui](./):
+1. Clone o repositório ou baixe o `.vsix` gerado [aqui](https://github.com/EvelynGitHub/simple-db/blob/main/simple-db-0.0.1.vsix):
     ```bash
     git clone https://github.com/EvelynGitHub/simple-db.git
     cd simple-db
