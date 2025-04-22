@@ -158,7 +158,7 @@ export class ConnectionManager {
         });
     }
 
-    async insertRow(dbName: string, tableName: string, primaryKeyColumn: string, primaryKeyValue: any, data: any): Promise<any[]> {
+    async insertRow(dbName: string, tableName: string, data: any): Promise<any[]> {
         const columns = Object.keys(data).join(', ');
         const placeholders = Object.keys(data).map(_ => '?').join(', ');
         const values = Object.values(data);
@@ -169,7 +169,7 @@ export class ConnectionManager {
         return new Promise((resolve, reject) => {
             db.run(sql, values, function (err: Error | null, rows: any) {
                 if (err) {
-                    reject(err);
+                    reject("Problema ou cadastrar: " + err);
                 } else {
                     resolve(rows);
                 }

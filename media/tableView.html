@@ -1,0 +1,38 @@
+<!-- media/tableView.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./style.css" rel="stylesheet" />
+    <title>Simple DB - Tabela</title>
+</head>
+
+<body>
+    <div class="toolbar">
+        <button id="insertBtn">Inserir</button>
+        <!-- <button id="updateBtn">Atualizar</button> -->
+        <!-- <button id="deleteBtn">Deletar</button> -->
+        <button id="refreshBtn">Atualizar Página</button>
+        <button id="searchBtn">Pesquisar</button>
+        <input id="searchInput" placeholder="Buscar..." />
+    </div>
+
+    <div id="tableContainer">
+        <!-- Tabela será renderizada aqui -->
+    </div>
+
+    <div id="modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Formulário</h2>
+            <form id="modalForm"></form>
+            <button id="btnSubmit">Salvar</button>
+        </div>
+    </div>
+
+    <script src="./script.js"></script>
+</body>
+
+</html>

@@ -36,7 +36,7 @@
       },
       {
         "command": "simpleDbExplorer.executeQuery",
-        "title": "Execute SQL Query"
+        "title": "Simple DB: Execute SQL Query"
       },
       {
         "command": "simple-db.openTable",

@@ -4,6 +4,8 @@ import { TableItem } from '../tree/TableItem';
 import { TableViewPanel } from '../view/TableViewPanel';
 
 export function RegisterCommands(context: vscode.ExtensionContext, treeProvider: DatabaseTreeProvider) {
+    let uri = context.extensionUri;
+
 
     context.subscriptions.push(
         vscode.commands.registerCommand('simple-db.connectDatabase', async () => {
@@ -22,7 +24,8 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
 
         vscode.commands.registerCommand('simple-db.openTable', async (tableItem: TableItem) => {
             if (tableItem) {
-                await TableViewPanel.showTable(tableItem.dbName, tableItem.tableName);
+                //await TableViewPanel.showTable(tableItem.dbName, tableItem.tableName);
+                await TableViewPanel.render(uri, tableItem.dbName, tableItem.tableName);
             }
         })
     );
