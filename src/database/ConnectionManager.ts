@@ -41,6 +41,24 @@ export class ConnectionManager {
         });
     }
 
+    async close(dbName: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const db = this.connections.get(dbName);
+            if (db) {
+                db.close((err) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        this.connections.delete(dbName);
+                        resolve();
+                    }
+                });
+            } else {
+                resolve();
+            }
+        });
+    }
+
     async getTables(dbName: string): Promise<string[]> {
         const db = this.getConnection(dbName);
         if (!db) {

@@ -53,6 +53,16 @@
       {
         "command": "simple-db.openTable",
         "title": "Abrir Tabela"
+      },
+      {
+        "command": "simple-db.refreshDatabase",
+        "title": "Atualiza conexão com banco de dados",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "simple-db.deleteDatabase",
+        "title": "Atualiza conexão com banco de dados",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -78,6 +88,16 @@
           "command": "simple-db.openTable",
           "when": "viewItem == tableItem",
           "group": "navigation"
+        },
+        {
+          "command": "simple-db.refreshDatabase",
+          "when": "viewItem == databaseItem",
+          "group": "inline"
+        },
+        {
+          "command": "simple-db.deleteDatabase",
+          "when": "viewItem == databaseItem",
+          "group": "inline"
         }
       ]
     }

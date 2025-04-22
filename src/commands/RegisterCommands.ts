@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { DatabaseTreeProvider } from '../tree/DatabaseTreeProvider';
 import { TableItem } from '../tree/TableItem';
 import { TableViewPanel } from '../view/TableViewPanel';
+import { DatabaseItem } from '../tree/DatabaseItem';
 
 export function RegisterCommands(context: vscode.ExtensionContext, treeProvider: DatabaseTreeProvider) {
     let uri = context.extensionUri;
@@ -20,6 +21,9 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
             if (uri && uri[0]) {
                 await treeProvider.connect(uri[0].fsPath);
             }
+        }),
+        vscode.commands.registerCommand('simple-db.deleteDatabase', async (databaseItem: DatabaseItem) => {
+            await treeProvider.deleteDatabase(databaseItem.filePath);
         }),
 
         vscode.commands.registerCommand('simple-db.openTable', async (tableItem: TableItem) => {

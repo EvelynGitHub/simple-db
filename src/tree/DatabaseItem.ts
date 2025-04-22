@@ -8,5 +8,6 @@ export class DatabaseItem extends vscode.TreeItem {
     ) {
         super(label, vscode.TreeItemCollapsibleState.Collapsed);
         this.contextValue = 'databaseItem';
+        this.iconPath = new vscode.ThemeIcon('database');
     }
 }

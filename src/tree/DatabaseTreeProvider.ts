@@ -26,6 +26,15 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<vscode.Tree
         return element;
     }
 
+    deleteDatabase(filePath: string) {
+        const dbName = this.databases.find(db => db.filePath === filePath);
+        if (dbName) {
+            this.connectionManager.close(dbName.label as string);
+            this.databases = this.databases.filter(db => db.filePath !== filePath);
+            this.refresh();
+        }
+    }
+
     async connect(databasePath: string) {
         const dbName = await this.connectionManager.connect(databasePath);
         this.databases.push(new DatabaseItem(dbName, databasePath));
