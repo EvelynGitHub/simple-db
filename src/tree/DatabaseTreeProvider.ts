@@ -54,7 +54,8 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<vscode.Tree
 
         if (element instanceof TableItem) {
             const columns = await this.connectionManager.getColumns(element.dbName, element.tableName);
-            return columns.map((col: any) => new ColumnItem(col));
+            // return columns.map((col: any) => new ColumnItem(col));
+            return columns;
         }
 
         return [];

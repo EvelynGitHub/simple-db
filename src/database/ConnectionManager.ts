@@ -1,6 +1,7 @@
 // src/database/ConnectionManager.ts
 import * as sqlite3 from 'sqlite3';
 import * as path from 'path';
+import { ColumnItem } from '../tree/ColumnItem';
 
 export class ConnectionManager {
     private static instance: ConnectionManager;
@@ -75,7 +76,7 @@ export class ConnectionManager {
         });
     }
 
-    async getColumns(dbName: string, tableName: string): Promise<any[]> {
+    async getColumns(dbName: string, tableName: string): Promise<ColumnItem[]> {
         const db = this.getConnection(dbName);
         if (!db) {
             return [];
@@ -85,7 +86,18 @@ export class ConnectionManager {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(rows.map((r: any) => r.name));
+                    // resolve(rows.map((r: any) => r.name));
+                    resolve(rows.map((r: any) => new ColumnItem(
+                        r.name,
+                        r.type,
+                        r.length ?? null,
+                        null,
+                        r.dflt_value,
+                        r.notnull === 1,
+                        r.pk === 1,
+                        r.unique === 1,
+                        r.pk === 1 && r.type === 'INTEGER' && r.dflt_value === 'AUTOINCREMENT'
+                    )));
                 }
             });
         });
