@@ -25,6 +25,9 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
         vscode.commands.registerCommand('simple-db.deleteDatabase', async (databaseItem: DatabaseItem) => {
             await treeProvider.deleteDatabase(databaseItem.filePath);
         }),
+        vscode.commands.registerCommand('simple-db.refreshDatabase', async (databaseItem: DatabaseItem) => {
+            await treeProvider.refresh();
+        }),
 
         vscode.commands.registerCommand('simple-db.openTable', async (tableItem: TableItem) => {
             if (tableItem) {
