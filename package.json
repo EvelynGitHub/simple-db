@@ -16,7 +16,8 @@
       "simpleDb": [
         {
           "id": "simpleDbExplorer",
-          "name": "Bancos de dados"
+          "name": "Bancos de dados",
+          "icon": "media/database.svg"
         }
       ]
     },
@@ -32,7 +33,18 @@
     "commands": [
       {
         "command": "simple-db.connectDatabase",
-        "title": "Simple DB: Conectar ao banco de dados"
+        "title": "Conectar ao banco de dados",
+        "icon": "$(add)"
+      },
+      {
+        "command": "simple-db.refreshDatabases",
+        "title": "Atualiza conexões com banco de dados",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "simple-db.settingsSimpleDb",
+        "title": "Configurações do Simple DB",
+        "icon": "$(settings)"
       },
       {
         "command": "simpleDbExplorer.executeQuery",
@@ -44,6 +56,23 @@
       }
     ],
     "menus": {
+      "view/title": [
+        {
+          "command": "simple-db.connectDatabase",
+          "when": "view == simpleDbExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "simple-db.refreshDatabases",
+          "when": "view == simpleDbExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "simple-db.settingsSimpleDb",
+          "when": "view == simpleDbExplorer",
+          "group": "navigation"
+        }
+      ],
       "view/item/context": [
         {
           "command": "simple-db.openTable",
