@@ -30,24 +30,28 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
 
         vscode.commands.registerCommand('simple-db.openTable', async (tableItem: TableItem) => {
             if (tableItem) {
-                // Caso as colunas não estejam carregadas, chama o método getChildren para carregá-las
-                // Isso pode ser necessário se o usuário clicar na tabela antes de expandi-la
-                if (!tableItem.columns || tableItem.columns.length === 0) {
-                    await treeProvider.getChildren(tableItem);
-                }
-                await TableViewPanel.render(uri, tableItem);
+                await fillColumns(tableItem);
+                TableViewPanel.render(uri, tableItem);
             }
         }),
 
         vscode.commands.registerCommand('simple-db.openNewTable', async (tableItem: TableItem) => {
             if (tableItem) {
-                // Caso as colunas não estejam carregadas, chama o método getChildren para carregá-las
-                // Isso pode ser necessário se o usuário clicar na tabela antes de expandi-la
-                if (!tableItem.columns || tableItem.columns.length === 0) {
-                    await treeProvider.getChildren(tableItem);
-                }
-                await TableViewPanel.renderNew(uri, tableItem);
+                await fillColumns(tableItem);
+                TableViewPanel.renderNew(uri, tableItem);
             }
         })
     );
+
+    async function fillColumns(tableItem: TableItem) {
+        if (!tableItem) {
+            return;
+        }
+
+        // Caso as colunas não estejam carregadas, chama o método getChildren para carregá-las
+        // Isso pode ser necessário se o usuário clicar na tabela antes de expandi-la
+        if (!tableItem.columns || tableItem.columns.length === 0) {
+            await treeProvider.getChildren(tableItem);
+        }
+    }
 }
