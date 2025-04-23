@@ -52,7 +52,8 @@
       },
       {
         "command": "simple-db.openTable",
-        "title": "Abrir Tabela"
+        "title": "Abrir Tabela",
+        "icon": "$(eye)"
       },
       {
         "command": "simple-db.refreshDatabase",
@@ -88,6 +89,11 @@
           "command": "simple-db.openTable",
           "when": "viewItem == tableItem",
           "group": "navigation"
+        },
+        {
+          "command": "simple-db.openTable",
+          "when": "viewItem == tableItem",
+          "group": "inline"
         },
         {
           "command": "simple-db.refreshDatabase",

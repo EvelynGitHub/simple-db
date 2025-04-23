@@ -7,7 +7,6 @@ import { DatabaseItem } from '../tree/DatabaseItem';
 export function RegisterCommands(context: vscode.ExtensionContext, treeProvider: DatabaseTreeProvider) {
     let uri = context.extensionUri;
 
-
     context.subscriptions.push(
         vscode.commands.registerCommand('simple-db.connectDatabase', async () => {
             const uri = await vscode.window.showOpenDialog({

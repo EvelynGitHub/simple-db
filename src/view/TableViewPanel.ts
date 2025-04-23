@@ -19,25 +19,30 @@ export class TableViewPanel {
 		this._dbName = dbName;
 		this._tableName = tableName;
 
+		// Quando o painel for fechado, chama dispose
+		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+
+		// Atualiza o HTML do painel
 		this._panel.webview.html = this._getHtmlForWebview(this._panel.webview);
-		this._sendForHtmlWebview();
-		this._setWebviewMessageListener(this._panel.webview);
+		this._sendForHtmlWebview(); // Envia os dados para o HTML
+		this._setWebviewMessageListener(this._panel.webview); // Escuta as mensagens do HTML
 	}
 
 	public static render(extensionUri: vscode.Uri, dbName: string, tableName: string) {
 		console.log('Renderizando tabela', dbName, tableName);
 
-		if (TableViewPanel.currentPanel) {
-			// Verifica se o painel ainda existe
-			if (TableViewPanel.currentPanel._panel.visible) {
-				TableViewPanel.currentPanel._panel.reveal(vscode.ViewColumn.One);
-				TableViewPanel.currentPanel._sendForHtmlWebview();
-				return;
-			} else {
-				// Painel foi fechado, limpar
-				TableViewPanel.currentPanel.dispose();
-				// TableViewPanel.currentPanel = undefined;
-			}
+		// Verifica se o painel ainda existe
+		if (TableViewPanel.currentPanel && TableViewPanel.currentPanel._panel.visible) {
+			TableViewPanel.currentPanel._panel.reveal(vscode.ViewColumn.One);
+
+			// Atualiza o título do painel
+			TableViewPanel.currentPanel._panel.title = `${dbName} - ${tableName}`;
+			TableViewPanel.currentPanel._dbName = dbName;
+			TableViewPanel.currentPanel._tableName = tableName;
+
+			// Atualiza os dados do HTML
+			TableViewPanel.currentPanel._sendForHtmlWebview();
+			return;
 		}
 
 
@@ -120,12 +125,8 @@ export class TableViewPanel {
 	}
 
 	private async _loadData(connectionManager: ConnectionManager, searchText?: string) {
-		debugger
 		const rows = await connectionManager.getAllRows(this._dbName, this._tableName, searchText);
 		const columns = Object.keys(rows[0]);
-
-		console.log('_loadData: Enviando dados para o webview', rows);
-
 
 		this._panel.webview.postMessage({
 			type: 'renderTable',
@@ -138,13 +139,13 @@ export class TableViewPanel {
 			columns,
 			rows
 		})
-
-		// this._panel.webview.html = this._getHtmlForWebview(this._panel.webview);
 	}
 
 	public dispose() {
+		console.log('Destruindo painel de tabela');
+
 		TableViewPanel.currentPanel = undefined;
-		this._panel.dispose();
+		// this._panel.dispose();
 
 		while (this._disposables.length) {
 			const disposable = this._disposables.pop();
@@ -160,8 +161,6 @@ export class TableViewPanel {
 		const rows = await connectionManager.getAllRows(this._dbName, this._tableName);
 		const columns = Object.keys(rows[0]);
 		//const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
-
-		console.log('Enviando dados para o webview', rows);
 
 		this._panel.webview.postMessage({
 			type: 'renderTable',
