@@ -76,23 +76,23 @@
         {
           "command": "simple-db.connectDatabase",
           "when": "view == simpleDbExplorer",
-          "group": "navigation"
+          "group": "navigation@1"
         },
         {
           "command": "simple-db.refreshDatabases",
           "when": "view == simpleDbExplorer",
-          "group": "navigation"
+          "group": "navigation@2"
         },
         {
           "command": "simple-db.settingsSimpleDb",
           "when": "view == simpleDbExplorer",
-          "group": "navigation"
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
         {
           "command": "simple-db.openTable",
-          "when": "viewItem == tableItem",
+          "when": "view == simpleDbExplorer && viewItem == tableItem && viewItem == columnItem",
           "group": "navigation"
         },
         {
