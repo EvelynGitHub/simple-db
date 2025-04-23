@@ -107,12 +107,12 @@ export class TableViewPanel {
 						case 'insert':
 							await connectionManager.insertRow(this._dbName, this._tableName, message.data);
 							vscode.window.showInformationMessage('Inserido novo registro');
-							this._loadData(connectionManager);
+							this._sendForHtmlWebview();
 							break;
 						case 'update':
 							await connectionManager.updateRow(this._dbName, this._tableName, message.primaryKey, message.primaryKeyValue, message.data);
 							vscode.window.showInformationMessage('Atualizar registros selecionados');
-							this._loadData(connectionManager);
+							this._sendForHtmlWebview();
 							break;
 						case 'delete':
 							console.log('Deletar registro', message.primaryKey, message.primaryKeyValue);
@@ -120,14 +120,14 @@ export class TableViewPanel {
 							await connectionManager.deleteRow(this._dbName, this._tableName, message.primaryKey, message.primaryKeyValue);
 							console.log("Depois do await");
 							vscode.window.showInformationMessage('Deletar registros selecionados');
-							this._loadData(connectionManager);
+							this._sendForHtmlWebview();
 							break;
 						case 'refresh':
-							this._loadData(connectionManager);
+							this._sendForHtmlWebview();
 							vscode.window.showInformationMessage('Recarregar dados da tabela');
 							break;
 						case 'search':
-							this._loadData(connectionManager, message.value);
+							this._sendForHtmlWebview(message.value);
 							vscode.window.showInformationMessage(`Buscar por: ${message.value}`);
 							break;
 					}
@@ -138,23 +138,6 @@ export class TableViewPanel {
 			undefined,
 			this._disposables
 		);
-	}
-
-	private async _loadData(connectionManager: ConnectionManager, searchText?: string) {
-		const rows = await connectionManager.getAllRows(this._dbName, this._tableName, searchText);
-		const columns = Object.keys(rows[0]);
-
-		this._panel.webview.postMessage({
-			type: 'renderTable',
-			payload: {
-				dbName: this._dbName,
-				tableName: this._tableName,
-				data: rows,
-				columns
-			},
-			columns,
-			rows
-		})
 	}
 
 	public dispose() {
@@ -171,12 +154,11 @@ export class TableViewPanel {
 		}
 	}
 
-	private async _sendForHtmlWebview() {
+	private async _sendForHtmlWebview(searchText?: string) {
 		const connectionManager = ConnectionManager.getInstance();
 
-		const rows = await connectionManager.getAllRows(this._dbName, this._tableName);
+		const rows = await connectionManager.getAllRows(this._dbName, this._tableName, searchText);
 		const columns = Object.keys(rows[0]);
-		//const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
 
 		this._panel.webview.postMessage({
 			type: 'renderTable',
