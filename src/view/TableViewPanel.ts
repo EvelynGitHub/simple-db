@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { ConnectionManager } from '../database/ConnectionManager';
 import * as path from 'path';
 import * as fs from 'fs';
+import { TableItem } from '../tree/TableItem';
 
 export class TableViewPanel {
 
@@ -10,14 +11,12 @@ export class TableViewPanel {
 	private readonly _panel: vscode.WebviewPanel;
 	private readonly _extensionUri: vscode.Uri;
 	private _disposables: vscode.Disposable[] = [];
-	private _dbName: string;
-	private _tableName: string;
+	private _table: TableItem;
 
-	private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, dbName: string, tableName: string) {
+	private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, table: TableItem) {
 		this._panel = panel;
 		this._extensionUri = extensionUri;
-		this._dbName = dbName;
-		this._tableName = tableName;
+		this._table = table;
 
 		// Quando o painel for fechado, chama dispose
 		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
@@ -28,27 +27,38 @@ export class TableViewPanel {
 		this._setWebviewMessageListener(this._panel.webview); // Escuta as mensagens do HTML
 	}
 
-	public static render(extensionUri: vscode.Uri, dbName: string, tableName: string) {
-		console.log('Renderizando tabela', dbName, tableName);
+	public static renderNew(extensionUri: vscode.Uri, table: TableItem) {
+		const panel = vscode.window.createWebviewPanel(
+			'tableView',
+			'Nova Tabela - ' + table.tableName,
+			vscode.ViewColumn.One,
+			{
+				enableScripts: true,
+				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
+				retainContextWhenHidden: true, // <-- Mantém o estado ao esconder
+			}
+		);
 
+		TableViewPanel.currentPanel = new TableViewPanel(panel, extensionUri, table);
+	}
+
+	public static render(extensionUri: vscode.Uri, table: TableItem) {
 		// Verifica se o painel ainda existe
 		if (TableViewPanel.currentPanel && TableViewPanel.currentPanel._panel.visible) {
 			TableViewPanel.currentPanel._panel.reveal(vscode.ViewColumn.One);
 
 			// Atualiza o título do painel
-			TableViewPanel.currentPanel._panel.title = `${dbName} - ${tableName}`;
-			TableViewPanel.currentPanel._dbName = dbName;
-			TableViewPanel.currentPanel._tableName = tableName;
+			TableViewPanel.currentPanel._panel.title = `${table.dbName} - ${table.tableName}`;
+			TableViewPanel.currentPanel._table = table;
 
 			// Atualiza os dados do HTML
 			TableViewPanel.currentPanel._sendForHtmlWebview();
 			return;
 		}
 
-
 		const panel = vscode.window.createWebviewPanel(
 			'tableView',
-			'Visualizar Tabela - ' + tableName,
+			'Visualizar Tabela - ' + table.tableName,
 			vscode.ViewColumn.One,
 			{
 				enableScripts: true,
@@ -57,23 +67,8 @@ export class TableViewPanel {
 			}
 		);
 
-		TableViewPanel.currentPanel = new TableViewPanel(panel, extensionUri, dbName, tableName);
+		TableViewPanel.currentPanel = new TableViewPanel(panel, extensionUri, table);
 
-	}
-
-	public static renderNew(extensionUri: vscode.Uri, dbName: string, tableName: string) {
-		const panel = vscode.window.createWebviewPanel(
-			'tableView',
-			'Nova Tabela - ' + tableName,
-			vscode.ViewColumn.One,
-			{
-				enableScripts: true,
-				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
-				retainContextWhenHidden: true, // <-- Mantém o estado ao esconder
-			}
-		);
-
-		TableViewPanel.currentPanel = new TableViewPanel(panel, extensionUri, dbName, tableName);
 	}
 
 
@@ -105,19 +100,19 @@ export class TableViewPanel {
 
 					switch (message.type) {
 						case 'insert':
-							await connectionManager.insertRow(this._dbName, this._tableName, message.data);
+							await connectionManager.insertRow(this._table.dbName, this._table.tableName, message.data);
 							vscode.window.showInformationMessage('Inserido novo registro');
 							this._sendForHtmlWebview();
 							break;
 						case 'update':
-							await connectionManager.updateRow(this._dbName, this._tableName, message.primaryKey, message.primaryKeyValue, message.data);
+							await connectionManager.updateRow(this._table.dbName, this._table.tableName, message.primaryKey, message.primaryKeyValue, message.data);
 							vscode.window.showInformationMessage('Atualizar registros selecionados');
 							this._sendForHtmlWebview();
 							break;
 						case 'delete':
 							console.log('Deletar registro', message.primaryKey, message.primaryKeyValue);
 
-							await connectionManager.deleteRow(this._dbName, this._tableName, message.primaryKey, message.primaryKeyValue);
+							await connectionManager.deleteRow(this._table.dbName, this._table.tableName, message.primaryKey, message.primaryKeyValue);
 							console.log("Depois do await");
 							vscode.window.showInformationMessage('Deletar registros selecionados');
 							this._sendForHtmlWebview();
@@ -157,14 +152,17 @@ export class TableViewPanel {
 	private async _sendForHtmlWebview(searchText?: string) {
 		const connectionManager = ConnectionManager.getInstance();
 
-		const rows = await connectionManager.getAllRows(this._dbName, this._tableName, searchText);
-		const columns = Object.keys(rows[0]);
+		const rows = await connectionManager.getAllRows(this._table.dbName, this._table.tableName, searchText);
+		// const columns = Object.keys(rows[0]);
+		const columns = this._table.columns;
+
+		console.log('Enviando dados para o HTML COLUNAS', this._table);
 
 		this._panel.webview.postMessage({
 			type: 'renderTable',
 			payload: {
-				dbName: this._dbName,
-				tableName: this._tableName,
+				// dbName: this._dbName,
+				// tableName: this._tableName,
 				data: rows,
 				columns
 			},
