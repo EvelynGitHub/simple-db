@@ -56,6 +56,11 @@
         "icon": "$(eye)"
       },
       {
+        "command": "simple-db.openNewTable",
+        "title": "Abrir em nova aba",
+        "icon": "$(list-tree)"
+      },
+      {
         "command": "simple-db.refreshDatabase",
         "title": "Atualiza conexão com banco de dados",
         "icon": "$(refresh)"
@@ -92,6 +97,16 @@
         },
         {
           "command": "simple-db.openTable",
+          "when": "viewItem == tableItem",
+          "group": "inline"
+        },
+        {
+          "command": "simple-db.openNewTable",
+          "when": "viewItem == tableItem",
+          "group": "navigation"
+        },
+        {
+          "command": "simple-db.openNewTable",
           "when": "viewItem == tableItem",
           "group": "inline"
         },

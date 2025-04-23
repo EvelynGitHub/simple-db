@@ -48,7 +48,7 @@ export class TableViewPanel {
 
 		const panel = vscode.window.createWebviewPanel(
 			'tableView',
-			'Visualizar Tabela',
+			'Visualizar Tabela - ' + tableName,
 			vscode.ViewColumn.One,
 			{
 				enableScripts: true,
@@ -60,6 +60,22 @@ export class TableViewPanel {
 		TableViewPanel.currentPanel = new TableViewPanel(panel, extensionUri, dbName, tableName);
 
 	}
+
+	public static renderNew(extensionUri: vscode.Uri, dbName: string, tableName: string) {
+		const panel = vscode.window.createWebviewPanel(
+			'tableView',
+			'Nova Tabela - ' + tableName,
+			vscode.ViewColumn.One,
+			{
+				enableScripts: true,
+				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
+				retainContextWhenHidden: true, // <-- Mantém o estado ao esconder
+			}
+		);
+
+		TableViewPanel.currentPanel = new TableViewPanel(panel, extensionUri, dbName, tableName);
+	}
+
 
 	private _getHtmlForWebview(webview: vscode.Webview): string {
 		const mediaPath = vscode.Uri.joinPath(this._extensionUri, 'media');

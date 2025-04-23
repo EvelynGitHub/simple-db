@@ -33,6 +33,12 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
                 //await TableViewPanel.showTable(tableItem.dbName, tableItem.tableName);
                 await TableViewPanel.render(uri, tableItem.dbName, tableItem.tableName);
             }
+        }),
+
+        vscode.commands.registerCommand('simple-db.openNewTable', async (tableItem: TableItem) => {
+            if (tableItem) {
+                await TableViewPanel.renderNew(uri, tableItem.dbName, tableItem.tableName);
+            }
         })
     );
 }
