@@ -34,7 +34,7 @@ export class TableViewPanel {
 			vscode.ViewColumn.One,
 			{
 				enableScripts: true,
-				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
+				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media/public')],
 				retainContextWhenHidden: true, // <-- Mantém o estado ao esconder
 			}
 		);
@@ -62,7 +62,7 @@ export class TableViewPanel {
 			vscode.ViewColumn.One,
 			{
 				enableScripts: true,
-				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
+				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media/public')],
 				retainContextWhenHidden: true, // <-- Mantém o estado ao esconder
 			}
 		);
@@ -73,9 +73,9 @@ export class TableViewPanel {
 
 
 	private _getHtmlForWebview(webview: vscode.Webview): string {
-		const mediaPath = vscode.Uri.joinPath(this._extensionUri, 'media');
+		const mediaPath = vscode.Uri.joinPath(this._extensionUri, 'media/public');
 
-		const htmlPath = path.join(this._extensionUri.fsPath, 'media', 'tableView.html');
+		const htmlPath = path.join(this._extensionUri.fsPath, 'media/public', 'index.html');
 		let htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
 		const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaPath, 'style.css'));
@@ -122,8 +122,8 @@ export class TableViewPanel {
 							vscode.window.showInformationMessage('Recarregar dados da tabela');
 							break;
 						case 'search':
-							this._sendForHtmlWebview(message.value);
-							vscode.window.showInformationMessage(`Buscar por: ${message.value}`);
+							this._sendForHtmlWebview(message.value, message.column);
+							vscode.window.showInformationMessage(`Buscar por: ${message.value} na coluna ${message.column}`);
 							break;
 					}
 				} catch (error: any) {
@@ -149,10 +149,10 @@ export class TableViewPanel {
 		}
 	}
 
-	private async _sendForHtmlWebview(searchText?: string) {
+	private async _sendForHtmlWebview(searchText?: string, column?: string) {
 		const connectionManager = ConnectionManager.getInstance();
 
-		const rows = await connectionManager.getAllRows(this._table.dbName, this._table.tableName, searchText);
+		const rows = await connectionManager.getAllRows(this._table.dbName, this._table.tableName, searchText, column);
 		// const columns = Object.keys(rows[0]);
 		const columns = this._table.columns;
 

@@ -103,68 +103,30 @@ export class ConnectionManager {
         });
     }
 
-    async getAllRows(dbName: string, tableName: string, searchText?: string): Promise<any[]> {
-        // const db = this.getConnection(dbName);
-        // if (!db) {
-        //     throw new Error('Banco de dados não encontrado');
-        // }
+    async getAllRows(dbName: string, tableName: string, searchText?: string, column?: string): Promise<any[]> {
+        const db = this.getConnection(dbName);
+        if (!db) {
+            throw new Error('Banco de dados não encontrado');
+        }
 
-        // const sql = `SELECT * FROM ${tableName}`;
+        let sql = `SELECT * FROM ${tableName} `;
+        const params: any[] = [];
 
-        // return new Promise((resolve, reject) => {
-        //     db.all(sql, [], (err, rows) => {
-        //         if (err) {
-        //             reject(err);
-        //         } else {
-        //             resolve(rows);
-        //         }
-        //     });
-        // });
+        if (column && searchText) {
+            sql += `WHERE ${column} LIKE ?`;
+            params.push(`%${searchText}%`);
+        }
+
+        sql += ` LIMIT 10`;
 
         return new Promise((resolve, reject) => {
-            const db = this.getDatabase(dbName);
-            if (!db) {
-                reject(new Error(`Banco de dados ${dbName} não encontrado.`));
-                return;
-            }
-
-            let query = `SELECT * FROM ${tableName}`;
-            const params: any[] = [];
-
-            if (searchText) {
-                query += ' WHERE ';
-                query += '( ' + '1=0 ';
-
-                db.all(`PRAGMA table_info(${tableName})`, [], (err, columns) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-
-                    columns.forEach((col: any) => {
-                        query += ` OR ${col.name} LIKE ?`;
-                        params.push(`%${searchText}%`);
-                    });
-
-                    query += ')';
-
-                    db.all(query, params, (err2, rows) => {
-                        if (err2) {
-                            reject(err2);
-                        } else {
-                            resolve(rows);
-                        }
-                    });
-                });
-            } else {
-                db.all(query, params, (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(rows);
-                    }
-                });
-            }
+            db.all(sql, params, (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows);
+                }
+            });
         });
     }
 

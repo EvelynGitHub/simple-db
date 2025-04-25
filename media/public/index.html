@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./style.css" rel="stylesheet" />
+    <title>Simple DB - Tabela</title>
+</head>
+
+<body>
+
+    <h2>Tabela Interativa</h2>
+    <!-- <button onclick="addNewRow()">+ Nova Linha</button> -->
+
+    <div class="toolbar">
+        <select id="searchColumn">
+            <option value="">Selecione uma coluna</option>
+        </select>
+        <input id="searchInput" placeholder="Buscar..." />
+        <button id="searchBtn">Pesquisar</button>
+        <label>
+            <input type="checkbox" id="auto-save-toggle" title="Salvar ao pressionar Enter"> Auto save
+        </label>
+
+        <button id="insertBtn" onclick="addNewRow()">+ Nova linha</button>
+        <button id="refreshBtn">Atualizar Página</button>
+        <button onclick="saveAll()">Salvar alterações</button>
+    </div>
+
+    <div id="container-table">
+        <!-- Tabela será renderizada aqui -->
+        <table>
+            <thead id="table-head"></thead>
+            <tbody id="table-body"></tbody>
+        </table>
+
+    </div>
+
+    <script src="./script.js"></script>
+
+</body>
+
+</html>

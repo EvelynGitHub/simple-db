@@ -18,6 +18,8 @@ export class ColumnItem extends vscode.TreeItem {
 
         this.contextValue = 'columnItem';
 
+        this.dataType = this.dataType?.toLowerCase() ?? null;
+
         if (this.primaryKey) {
             this.iconPath = new vscode.ThemeIcon('key');
         } else if (this.foreignKey) {
