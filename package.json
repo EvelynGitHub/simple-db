@@ -132,7 +132,7 @@
         {
           "command": "simple-db.executeQuery",
           "when": "viewItem == databaseItem",
-          "group": "navigation"
+          "group": "inline"
         }
       ]
     }
@@ -151,6 +151,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
+    "@types/pg": "^8.11.14",
     "@types/sqlite3": "^3.1.11",
     "@types/vscode": "^1.99.0",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
@@ -161,6 +162,8 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
+    "mysql2": "^3.14.1",
+    "pg": "^8.15.6",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
   }

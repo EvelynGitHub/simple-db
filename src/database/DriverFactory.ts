@@ -22,15 +22,40 @@ export class DriverFactory {
             return DriverFactory.drivers[dbName];
         }
 
-        // Caso contrário, cria e conecta um novo driver
-        if (config.type === 'sqlite' && config.path) {
-            const driver = new SQLiteDriver(config.path);
-            await driver.connect();
-            DriverFactory.drivers[dbName] = driver;
-            return driver;
+        let driver: IDatabaseDriver;
+
+        switch (config.type) {
+            case 'sqlite': {
+                const { SQLiteDriver } = await import('./drivers/SQLiteDriver');
+                driver = new SQLiteDriver(config.path!);
+                break;
+            }
+            case 'mysql': {
+                try {
+                    const { MySQLDriver } = await import('./drivers/MySQLDriver');
+                    driver = new MySQLDriver(config.host!, config.user!, config.password!, config.name || dbName);
+                    break;
+                } catch (error) {
+                    throw new Error('Pacote mysql2 não encontrado. Por favor, instale com: npm install mysql2');
+                }
+            }
+            case 'postgres': {
+                try {
+                    const { PostgresDriver } = await import('./drivers/PostgresDriver');
+                    driver = new PostgresDriver(config.host!, config.user!, config.password!, config.name || dbName);
+                    break;
+                } catch (error) {
+                    throw new Error('Pacote pg não encontrado. Por favor, instale com: npm install pg');
+                }
+            }
+            default:
+                throw new Error(`Tipo de banco de dados não suportado: ${config.type}`);
         }
 
-        throw new Error(`Driver para ${config.type} ainda não implementado.`);
+        await driver.connect(); // Conecta o driver
+        this.drivers[dbName] = driver; // Armazena o driver para reuso
+
+        return driver;
     }
 
     /**
