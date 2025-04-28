@@ -5,7 +5,7 @@ import { DatabaseTreeProvider } from './tree/DatabaseTreeProvider';
 import { RegisterCommands } from './commands/RegisterCommands';
 
 export function activate(context: vscode.ExtensionContext) {
-	const treeProvider = new DatabaseTreeProvider();
+	const treeProvider = new DatabaseTreeProvider(context);
 	vscode.window.registerTreeDataProvider('simpleDbExplorer', treeProvider);
 
 	RegisterCommands(context, treeProvider);
