@@ -42,11 +42,12 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<DatabaseIte
 
     async connect(databasePath: string) {
         const dbName = await this.connectionManager.connect(databasePath);
-        this.connectionManager.registerConnection(dbName, {
+        this.connectionManager.registerConnection({
             path: databasePath,
-            type: 'sqlite'
+            type: 'sqlite',
+            name: dbName
         });
-        this.databases.push(new DatabaseItem(dbName, { type: 'sqlite', path: databasePath }));
+        this.databases.push(new DatabaseItem(dbName, { name: dbName, type: 'sqlite', path: databasePath }));
         this.refresh();
         return dbName as string;
     }

@@ -1,0 +1,47 @@
+<!-- media/queryRunner.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Executar Query</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <h2>Executar Query SQL</h2>
+    <textarea id="queryInput" placeholder="Digite sua query aqui..." rows="10" style="width: 100%;"></textarea>
+    <br>
+    <button id="runButton">Executar</button>
+    <pre id="resultOutput"></pre>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+
+        document.getElementById('runButton').addEventListener('click', () => {
+            const query = document.getElementById('queryInput').value;
+
+            vscode.postMessage({
+                type: 'runQuery',
+                query
+            });
+        });
+
+        window.addEventListener('message', event => {
+            console.log('\nqueryRunner.html: ', event);
+            const message = event.data;
+
+            if (message.type === 'queryResult') {
+                const output = document.getElementById('resultOutput');
+                const result = message.payload;
+                if (result.success) {
+                    output.textContent = JSON.stringify(result.result, null, 2);
+                } else {
+                    output.textContent = `Erro: ${result.result}`;
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

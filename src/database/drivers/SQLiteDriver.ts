@@ -69,10 +69,6 @@ export class SQLiteDriver implements IDatabaseDriver {
         await this.db.run(sql, values);
     }
 
-    // async deleteRow(table: string, primaryKey: string) {
-    //     await this.db.run(`DELETE FROM ${table} WHERE ${primaryKey}=?`, [primaryKey]);
-    // }
-
     async deleteRow(tableName: string, primaryKeyColumn: string, primaryKeyValue: any): Promise<void> {
         const sql = `DELETE FROM ${tableName} WHERE ${primaryKeyColumn} = ?`;
         await this.db.run(sql, [primaryKeyValue]);
@@ -80,5 +76,20 @@ export class SQLiteDriver implements IDatabaseDriver {
 
     async close(): Promise<void> {
         await this.db.close();
+    }
+
+    async executeQuery(query: string): Promise<any> {
+
+        try {
+            const result = await this.db.all(query);
+            return { success: true, result };
+        } catch (errorAll) {
+            try {
+                await this.db.run(query);
+                return { success: true, result: 'Query executada com sucesso.' };
+            } catch (errorRun) {
+                return { success: false, result: (errorRun as any).message || 'Erro desconhecido ao executar a query.' };
+            }
+        }
     }
 }

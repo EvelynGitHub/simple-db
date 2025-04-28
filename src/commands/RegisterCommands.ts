@@ -1,11 +1,13 @@
 import * as vscode from 'vscode';
+import path from 'path';
 import { DatabaseTreeProvider } from '../tree/DatabaseTreeProvider';
 import { TableItem } from '../tree/TableItem';
 import { TableViewPanel } from '../view/TableViewPanel';
 import { DatabaseItem } from '../tree/DatabaseItem';
-import path from 'path';
 import { ConnectionManager } from '../database/ConnectionManager';
 import { ConnectionFormPanel } from '../view/ConnectionFormPanel';
+import { DriverFactory } from '../database/DriverFactory';
+import { QueryRunnerPanel } from '../view/query/QueryRunnerPanel';
 
 export function RegisterCommands(context: vscode.ExtensionContext, treeProvider: DatabaseTreeProvider) {
     let uri = context.extensionUri;
@@ -27,7 +29,8 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
 
             const connectionManager = ConnectionManager.getInstance();
             // const connectionManager = treeProvider.connect(filePath);
-            connectionManager.registerConnection(dbName, {
+            connectionManager.registerConnection({
+                name: dbName,
                 path: filePath,
                 type: 'sqlite'
             });
@@ -35,10 +38,12 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
             treeProvider.refresh();
         }),
         vscode.commands.registerCommand('simple-db.deleteDatabase', async (databaseItem: DatabaseItem) => {
-            if (databaseItem.config.path) {
-                treeProvider.deleteDatabase(databaseItem.config.path);
-            } else {
-                vscode.window.showErrorMessage('Database path is undefined.');
+            const confirm = await vscode.window.showWarningMessage(`Remover conexão com ${databaseItem.label}?`, 'Sim', 'Cancelar');
+
+            if (confirm === 'Sim') {
+                await DriverFactory.disconnect(databaseItem.label); // fecha driver corretamente
+                ConnectionManager.getInstance().removeConnection(databaseItem.label);
+                treeProvider.refresh();
             }
         }),
         vscode.commands.registerCommand('simple-db.refreshDatabase', async (databaseItem: DatabaseItem) => {
@@ -69,12 +74,31 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
 
     context.subscriptions.push(
         vscode.commands.registerCommand('simple-db.saveConnection', (config: any) => {
-            const dbName = config.name;
+            // const dbName = config.name;
             const manager = ConnectionManager.getInstance();
-            manager.registerConnection(dbName, config);
+            manager.registerConnection(config);
             treeProvider.refresh();
         })
     );
+
+    // Executa query no banco de dados
+    context.subscriptions.push(
+        vscode.commands.registerCommand('simple-db.executeQuery', async (item: any) => {
+            if (!item) {
+                vscode.window.showWarningMessage('Selecione um banco de dados para executar a query.');
+                return;
+            }
+
+            const dbName = item.label; // Assumindo que o item é um DatabaseItem e label é o nome
+            if (!dbName) {
+                vscode.window.showWarningMessage('Nome do banco não encontrado.');
+                return;
+            }
+
+            QueryRunnerPanel.render(context.extensionUri, dbName);
+        })
+    );
+
 
 
     async function fillColumns(tableItem: TableItem) {

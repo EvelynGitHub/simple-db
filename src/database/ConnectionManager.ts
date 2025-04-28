@@ -5,6 +5,7 @@ import { ColumnItem } from '../tree/ColumnItem';
 import * as vscode from 'vscode';
 
 export type ConnectionConfig = {
+    name: string; // nome do banco de dados
     type: 'sqlite' | 'mysql' | 'postgres';
     path?: string;    // caminho do arquivo, usado para SQLite
     host?: string;    // endereço do servidor, usado para MySQL/Postgres
@@ -35,8 +36,8 @@ export class ConnectionManager {
         this.restoreConnections();
     }
 
-    public registerConnection(dbName: string, config: ConnectionConfig) {
-        this.connections[dbName] = config;
+    public registerConnection(config: ConnectionConfig) {
+        this.connections[config.name] = config;
         this.saveConnections();
     }
 
@@ -88,9 +89,10 @@ export class ConnectionManager {
                     reject(err);
                 } else {
                     const dbName = path.basename(databasePath);
-                    // this.connections.set(dbName, db);
-                    // this.connections[dbName] = db;
-                    this.registerConnection(dbName, { type: `sqlite`, path: databasePath });
+                    this.registerConnection({
+                        type: `sqlite`, path: databasePath,
+                        name: dbName
+                    });
                     resolve(dbName);
                 }
             });
