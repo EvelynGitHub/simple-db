@@ -31,7 +31,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<DatabaseIte
         const dbName = this.databases.find(db => db.config.path === filePath);
         if (dbName) {
             const config = this.connectionManager.getConnection(dbName.label);
-            const driver = await DriverFactory.create(config);
+            const driver = await DriverFactory.create(config, dbName.label as string);
             await driver.close();
 
             this.connectionManager.removeConnection(dbName.label as string);
@@ -66,7 +66,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<DatabaseIte
             if (!config) return [];
 
             try {
-                const driver = await DriverFactory.create(config);
+                const driver = await DriverFactory.create(config, element.label);
                 const tables = await driver.getTables();
                 return tables.map(table => {
                     const tableItem = new TableItem(element.label, table);
@@ -86,7 +86,7 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<DatabaseIte
             if (!config) return [];
 
             try {
-                const driver = await DriverFactory.create(config);
+                const driver = await DriverFactory.create(config, dbElement);
                 const columns = await driver.getColumns(element.tableName);
                 element.columns = columns;
                 return columns;

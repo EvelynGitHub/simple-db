@@ -91,19 +91,22 @@ export class TableViewPanel {
 	}
 
 	private async _setWebviewMessageListener(webview: vscode.Webview) {
-
-		console.log('TableViewPanel.ts - Iniciando listener de mensagens: ', this._table);
-
-		const connectionManager = ConnectionManager.getInstance().getConnection(this._table.dbName);
-		if (!connectionManager) return;
-
-		const driver = await DriverFactory.create(connectionManager);
-		// const tables = await driver.getTables();
-
 		webview.onDidReceiveMessage(
 			async (message) => {
 				try {
-					console.log('Mensagem recebida do webview HTML: ', message);
+					const connectionManager = ConnectionManager.getInstance();
+					const connection = connectionManager.getConnection(this._table.dbName);
+
+					if (!connection) {
+						vscode.window.showWarningMessage(`Conexão perdida com o banco ${this._table.dbName}. Fechando painel.`);
+						this._panel.dispose(); // Fecha o Webview para não deixar a tela travada
+						return;
+					}
+
+					// Usa o driver já cacheado corretamente
+					const driver = await DriverFactory.create(connection, this._table.dbName);
+					// console.log("\t(TableViewPanel.ts -> webview.onDidReceiveMessage): ", message.data, this._table);
+					// console.log('Mensagem recebida do webview HTML: ', message);
 
 					switch (message.type) {
 						case 'insert':
@@ -117,10 +120,7 @@ export class TableViewPanel {
 							this._sendForHtmlWebview();
 							break;
 						case 'delete':
-							console.log('Deletar registro', message.primaryKey, message.primaryKeyValue);
-
 							await driver.deleteRow(this._table.tableName, message.primaryKey, message.primaryKeyValue);
-							console.log("Depois do await");
 							vscode.window.showInformationMessage('Deletar registros selecionados');
 							this._sendForHtmlWebview();
 							break;
@@ -143,8 +143,6 @@ export class TableViewPanel {
 	}
 
 	public dispose() {
-		console.log('Destruindo painel de tabela');
-
 		TableViewPanel.currentPanel = undefined;
 		// this._panel.dispose();
 
@@ -158,12 +156,12 @@ export class TableViewPanel {
 
 	private async _sendForHtmlWebview(searchText?: string, column?: string) {
 		const connectionManager = ConnectionManager.getInstance().getConnection(this._table.dbName);
-		const driver = await DriverFactory.create(connectionManager);
+		const driver = await DriverFactory.create(connectionManager, this._table.dbName);
 		const rows = await driver.getAllRows(this._table.tableName, searchText, column);
 
 		const columns = this._table.columns;
 
-		console.log('Enviando dados para o HTML COLUNAS', this._table);
+		// console.log('Enviando dados para o HTML COLUNAS', this._table);
 
 		this._panel.webview.postMessage({
 			type: 'renderTable',

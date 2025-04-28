@@ -48,7 +48,6 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
         vscode.commands.registerCommand('simple-db.openTable', async (tableItem: TableItem) => {
             if (tableItem) {
                 await fillColumns(tableItem);
-                console.log('Preenchendo colunas para a tabela:', tableItem);
                 TableViewPanel.render(uri, tableItem);
             }
         }),
