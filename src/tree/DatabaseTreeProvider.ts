@@ -29,27 +29,18 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<DatabaseIte
 
     async deleteDatabase(filePath: string) {
         const dbName = this.databases.find(db => db.config.path === filePath);
-        if (dbName) {
-            const config = this.connectionManager.getConnection(dbName.label);
-            const driver = await DriverFactory.create(config, dbName.label as string);
-            await driver.close();
 
-            this.connectionManager.removeConnection(dbName.label as string);
-            this.databases = this.databases.filter(db => db.config.path !== filePath);
-            this.refresh();
+        try {
+            if (dbName) {
+                await DriverFactory.disconnect(dbName.label as string);
+
+                this.connectionManager.removeConnection(dbName.label as string);
+                this.databases = this.databases.filter(db => db.config.path !== filePath);
+                this.refresh();
+            }
+        } catch (error) {
+            console.error(`Erro ao desconectar o banco ${dbName?.label || 'desconhecido'}:`, error);
         }
-    }
-
-    async connect(databasePath: string) {
-        const dbName = await this.connectionManager.connect(databasePath);
-        this.connectionManager.registerConnection({
-            path: databasePath,
-            type: 'sqlite',
-            name: dbName
-        });
-        this.databases.push(new DatabaseItem(dbName, { name: dbName, type: 'sqlite', path: databasePath }));
-        this.refresh();
-        return dbName as string;
     }
 
     async getChildren(element?: DatabaseItem | TableItem | ColumnItem): Promise<(DatabaseItem | TableItem | ColumnItem)[]> {

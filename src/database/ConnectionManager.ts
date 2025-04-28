@@ -1,7 +1,4 @@
 // src/database/ConnectionManager.ts
-import * as sqlite3 from 'sqlite3';
-import * as path from 'path';
-import { ColumnItem } from '../tree/ColumnItem';
 import * as vscode from 'vscode';
 
 export type ConnectionConfig = {
@@ -15,9 +12,6 @@ export type ConnectionConfig = {
 
 export class ConnectionManager {
     private static instance: ConnectionManager;
-    // private connections: Map<string, sqlite3.Database> = new Map();
-    // private connections: { [dbName: string]: any } = {}; 
-    // private connections: { [dbName: string]: { path: string } } = {};
     private connections: { [dbName: string]: ConnectionConfig } = {};
 
     private globalState?: vscode.Memento;
@@ -67,35 +61,5 @@ export class ConnectionManager {
             delete this.connections[dbName];
             this.saveConnections();
         }
-    }
-
-
-    // getConnection(dbName: string): sqlite3.Database | undefined {
-    //     return this.connections.get(dbName);
-    // }
-
-    // public getDatabase(dbName: string): sqlite3.Database {
-    // const db = this.connections.get(dbName);
-    // if (!db) {
-    //     throw new Error('Banco de dados não encontrado');
-    // }
-    // return db;
-    // }
-
-    async connect(databasePath: string): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const db = new sqlite3.Database(databasePath, (err) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    const dbName = path.basename(databasePath);
-                    this.registerConnection({
-                        type: `sqlite`, path: databasePath,
-                        name: dbName
-                    });
-                    resolve(dbName);
-                }
-            });
-        });
     }
 }

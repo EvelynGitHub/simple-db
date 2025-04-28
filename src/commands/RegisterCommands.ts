@@ -28,7 +28,6 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
             const dbName = path.basename(filePath);
 
             const connectionManager = ConnectionManager.getInstance();
-            // const connectionManager = treeProvider.connect(filePath);
             connectionManager.registerConnection({
                 name: dbName,
                 path: filePath,
@@ -47,6 +46,7 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
             }
         }),
         vscode.commands.registerCommand('simple-db.refreshDatabase', async (databaseItem: DatabaseItem) => {
+            console.log('Refresh database', databaseItem);
             await treeProvider.refresh();
         }),
 
