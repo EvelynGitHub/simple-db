@@ -69,6 +69,14 @@
         "command": "simple-db.deleteDatabase",
         "title": "Atualiza conexão com banco de dados",
         "icon": "$(trash)"
+      },
+      {
+        "command": "simple-db.newConnection",
+        "title": "Nova Conexão"
+      },
+      {
+        "command": "simple-db.saveConnection",
+        "title": "Salvar Conexão"
       }
     ],
     "menus": {
