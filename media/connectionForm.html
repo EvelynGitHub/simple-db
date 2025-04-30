@@ -2,99 +2,76 @@
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Adicionar Banco de Dados</title>
-    <!-- <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 10px;
-        }
-
-        h2 {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 10px;
-        }
-
-        input,
-        select,
-        button {
-            margin-top: 5px;
-            margin-bottom: 15px;
-            width: 100%;
-            padding: 6px;
-            box-sizing: border-box;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-    </style> -->
     <style>
+        :root {
+            color-scheme: light dark;
+        }
+
         body {
-            font-family: system-ui, sans-serif;
-            padding: 16px 24px;
-            background-color: #f9f9f9;
-            color: #333;
+            font-family: var(--vscode-font-family, sans-serif);
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            padding: 24px;
+            font-size: 13px;
         }
 
         h2 {
-            font-size: 1.4rem;
             margin-bottom: 20px;
-            color: #222;
+            font-size: 16px;
+            color: var(--vscode-editor-foreground);
+            text-align: center;
+        }
+
+        .form-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            padding-bottom: 10px;
         }
 
         label {
             display: flex;
             flex-direction: column;
             margin-bottom: 12px;
-            font-size: 0.95rem;
         }
 
         input,
         select {
-            padding: 6px 10px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            font-size: 0.95rem;
-            transition: border-color 0.2s;
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 2px;
+            padding: 5px 8px;
+            font-size: 13px;
+            max-width: 100%;
         }
 
         input:focus,
         select:focus {
-            border-color: #007acc;
-            outline: none;
+            outline: 1px solid var(--vscode-focusBorder);
         }
 
-        button {
-            background-color: #007acc;
-            border: none;
-            color: white;
-            padding: 8px 14px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            transition: background-color 0.2s;
+        input[readonly] {
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            opacity: 0.8;
         }
 
-        button:hover {
-            background-color: #005f9e;
+        .sqlite-path-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        #path {
-            margin-top: 5px;
-            margin-bottom: 10px;
-            width: fit-content;
+        .sqlite-path-row input {
+            flex: 1;
         }
 
         .hidden {
@@ -103,68 +80,99 @@
 
         .actions {
             display: flex;
+            justify-content: space-between;
             flex-wrap: wrap;
             gap: 10px;
             margin-top: 20px;
         }
 
-        #sqliteFields,
-        #serverFields {
-            margin-top: 15px;
+        button {
+            padding: 6px 14px;
+            border-radius: 2px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
         }
 
-        input[readonly] {
-            background-color: #eee;
-            color: #444;
+        #btnSave {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+        }
+
+        #btnSave:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+
+        #btnTest {
+            background-color: var(--vscode-button-secondaryBackground, #3a3d41);
+            color: var(--vscode-button-secondaryForeground, #fff);
+        }
+
+        #btnTest:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground, #505356);
+        }
+
+        #btnCancel {
+            background-color: transparent;
+            border: 1px solid var(--vscode-editorWidget-border, #8884);
+            color: var(--vscode-editor-foreground);
+        }
+
+        #btnCancel:hover {
+            background-color: var(--vscode-editorWidget-background);
+        }
+
+        .hint {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 8px;
+            margin-bottom: 12px;
         }
     </style>
-
 </head>
 
 <body>
     <h2>Adicionar Banco de Dados</h2>
-
-    <label>Tipo de Banco:
-        <select id="dbType">
-            <option value="sqlite">SQLite</option>
-            <option value="mysql">MySQL</option>
-            <option value="postgres">Postgres</option>
-        </select>
-    </label>
-
-    <div id="sqliteFields">
-        <!-- <div style="display: flex; gap: 10px; align-items: end;">
-            <label style="flex: 1;">Caminho do Arquivo:
-                <input type="text" id="pathDisplay" readonly>
+    <div class="form-container">
+        <div class="section">
+            <label>Tipo de Banco:
+                <select id="dbType">
+                    <option value="sqlite">SQLite</option>
+                    <option value="mysql">MySQL</option>
+                    <option value="postgres">Postgres</option>
+                </select>
             </label>
-            <button type="button" id="path" style="margin: 0;">Selecionar</button>
-        </div> -->
+        </div>
 
-        <label>Caminho do Arquivo:
-            <button id="path"> Selecionar arquivo</button>
-            <input type="text" id="pathDisplay" readonly>
-        </label>
-    </div>
+        <div id="sqliteFields" class="section">
+            <div class="sqlite-path-row">
+                <button type="button" id="path">Selecionar</button>
+                <input type="text" id="pathDisplay" readonly>
+            </div>
+            <div class="hint">Exemplo: C:/projetos/meubanco.sqlite</div>
+        </div>
 
-    <div id="serverFields" class="hidden">
-        <label>Host:
-            <input id="host" type="text" placeholder="localhost" />
-        </label>
-        <label>Usuário:
-            <input id="user" type="text" />
-        </label>
-        <label>Senha:
-            <input id="password" type="password" />
-        </label>
-        <label>Nome do Banco:
-            <input id="database" type="text" />
-        </label>
-    </div>
+        <div id="serverFields" class="section hidden">
+            <label>Host:
+                <input id="host" type="text" placeholder="localhost" />
+            </label>
+            <label>Usuário:
+                <input id="user" type="text" />
+            </label>
+            <label>Senha:
+                <input id="password" type="password" />
+            </label>
+            <label>Nome do Banco:
+                <input id="database" type="text" />
+            </label>
+        </div>
 
-    <div class="actions">
-        <button id="btnTest">Testar Conexão</button>
-        <button id="btnSave">Salvar Conexão</button>
-        <button id="btnCancel">Cancelar</button>
+        <div class="actions">
+            <button id="btnTest">Testar Conexão</button>
+            <button id="btnSave">Salvar Conexão</button>
+            <button id="btnCancel">Cancelar</button>
+        </div>
     </div>
 
     <script>
@@ -178,12 +186,10 @@
         const btnSave = document.getElementById('btnSave');
         const btnCancel = document.getElementById('btnCancel');
         const btnPath = document.getElementById('path');
-
         const inputPathDisplay = document.getElementById('pathDisplay');
 
         window.addEventListener('message', event => {
             const { type, path } = event.data;
-
             if (type === 'fileSelected') {
                 inputPathDisplay.value = path;
             }
@@ -200,10 +206,10 @@
         }
 
         dbTypeSelect.addEventListener('change', updateFields);
+        updateFields();
 
         btnTest.addEventListener('click', () => {
             const config = getFormData();
-            console.log("Testou: ", config)
             vscode.postMessage({ type: 'testConnection', config });
         });
 
@@ -222,11 +228,10 @@
 
         function getFormData() {
             const dbType = dbTypeSelect.value;
-
             if (dbType === 'sqlite') {
                 return {
                     type: 'sqlite',
-                    path: inputPathDisplay.value, // <- pega o path do arquivo diretamente
+                    path: inputPathDisplay.value
                 };
             } else {
                 return {
