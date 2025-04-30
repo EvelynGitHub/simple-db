@@ -1,5 +1,12 @@
 import { ColumnItem } from "../../tree/ColumnItem";
 
+export type QueryResult = {
+    success: boolean,
+    type?: string,
+    result: any[] | {} | string | undefined
+};
+
+
 export interface IDatabaseDriver {
     connect(): Promise<void>;
     close(): Promise<void>;
@@ -13,5 +20,5 @@ export interface IDatabaseDriver {
     deleteRow(tableName: string, primaryKeyColumn: string, primaryKeyValue: any): Promise<void>;
 
     /** Novo método para execução de queries livres */
-    executeQuery(query: string): Promise<any>;
+    executeQuery(query: string): Promise<QueryResult>;
 }

@@ -1,6 +1,6 @@
 import * as sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
-import { IDatabaseDriver } from './IDatabaseDriver';
+import { IDatabaseDriver, QueryResult } from './IDatabaseDriver';
 import { ColumnItem } from '../../tree/ColumnItem';
 
 export class SQLiteDriver implements IDatabaseDriver {
@@ -79,7 +79,6 @@ export class SQLiteDriver implements IDatabaseDriver {
     }
 
     async executeQuery(query: string): Promise<any> {
-
         try {
             const result = await this.db.all(query);
             return { success: true, result };

@@ -22,7 +22,7 @@ export class QueryRunner {
             const driver = await DriverFactory.create(connection, dbName);
             const result = await driver.executeQuery(query);
 
-            return { success: true, result };
+            return { success: result.success, result: result.result };
 
         } catch (error: any) {
             console.error('Erro ao executar query:', error);

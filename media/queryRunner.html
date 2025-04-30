@@ -5,43 +5,161 @@
 <head>
     <meta charset="UTF-8">
     <title>Executar Query</title>
-    <link rel="stylesheet" href="./style.css">
+    <!-- <link rel="stylesheet" href="./style.css"> -->
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+
+        body {
+            font-family: var(--vscode-font-family, sans-serif);
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            padding: 20px;
+            font-size: 13px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        textarea#queryInput {
+            width: 100%;
+            height: 150px;
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            font-family: monospace;
+            font-size: 13px;
+            border-radius: 3px;
+            padding: 10px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        .query-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 16px;
+        }
+
+        .query-actions button {
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 2px;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s ease;
+        }
+
+        #executeBtn {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+        }
+
+        #executeBtn:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+
+        #clearBtn {
+            background-color: transparent;
+            border: 1px solid var(--vscode-editorWidget-border);
+            color: var(--vscode-editor-foreground);
+        }
+
+        #clearBtn:hover {
+            background-color: var(--vscode-editorWidget-background);
+        }
+
+        #queryResult {
+            margin-top: 20px;
+            background-color: var(--vscode-editorWidget-background);
+            border: 1px solid var(--vscode-editorWidget-border);
+            padding: 12px;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .query-error {
+            color: var(--vscode-errorForeground);
+            font-weight: bold;
+        }
+
+        .query-success {
+            color: var(--vscode-terminal-ansiGreen);
+        }
+
+        .hint {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 4px;
+            margin-bottom: 5px;
+        }
+    </style>
+
 </head>
 
 <body>
     <h2>Executar Query SQL</h2>
-    <textarea id="queryInput" placeholder="Digite sua query aqui..." rows="10" style="width: 100%;"></textarea>
-    <br>
-    <button id="runButton">Executar</button>
-    <pre id="resultOutput"></pre>
+
+    <textarea id="queryInput" placeholder="Digite sua query SQL aqui..."></textarea>
+    <p class="hint">Não esqueça do <b>limit</b> no <i> select</i> e do <b>where</b> no <i>update</i> ;) </p>
+    <div class="query-actions">
+        <button id="executeBtn">Executar</button>
+        <button id="clearBtn">Limpar</button>
+    </div>
+    <div id="queryResult">Resultado aparecerá aqui...</div>
 
     <script>
         const vscode = acquireVsCodeApi();
 
-        document.getElementById('runButton').addEventListener('click', () => {
-            const query = document.getElementById('queryInput').value;
+        const queryInput = document.getElementById("queryInput");
+        const executeBtn = document.getElementById("executeBtn");
+        const clearBtn = document.getElementById("clearBtn");
+        const resultDiv = document.getElementById("queryResult");
 
+        executeBtn.addEventListener("click", () => {
+            const query = queryInput.value.trim();
+            if (!query) return;
+
+            resultDiv.textContent = "Executando...";
             vscode.postMessage({
-                type: 'runQuery',
+                type: "runQuery",
                 query
             });
         });
 
-        window.addEventListener('message', event => {
-            console.log('\nqueryRunner.html: ', event);
-            const message = event.data;
+        clearBtn.addEventListener("click", () => {
+            queryInput.value = "";
+            resultDiv.textContent = "Resultado aparecerá aqui...";
+        });
 
-            if (message.type === 'queryResult') {
-                const output = document.getElementById('resultOutput');
-                const result = message.payload;
-                if (result.success) {
-                    output.textContent = JSON.stringify(result.result, null, 2);
+        // Receber resposta do VSCode
+        window.addEventListener("message", event => {
+            const { type, result, success } = event.data;
+
+            if (type === "queryResult") {
+                if (!success) {
+                    resultDiv.innerHTML = `<div class="query-error">${result}</div>`;
                 } else {
-                    output.textContent = `Erro: ${result.result}`;
+                    const json = JSON.stringify(result, null, 2);
+                    resultDiv.innerHTML = `<pre class="query-success">${json}</pre>`;
                 }
             }
         });
+
     </script>
+
 </body>
 
 </html>

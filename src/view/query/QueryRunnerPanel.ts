@@ -32,6 +32,7 @@ export class QueryRunnerPanel {
                 {
                     enableScripts: true,
                     localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
+                    retainContextWhenHidden: true
                 }
             );
 
@@ -59,11 +60,13 @@ export class QueryRunnerPanel {
         webview.onDidReceiveMessage(async (message) => {
             if (message.type === 'runQuery') {
                 const query = message.query;
-                const result = await QueryRunner.runQuery(this._dbName, query);
+                const { success, result } = await QueryRunner.runQuery(this._dbName, query);
 
                 this._panel.webview.postMessage({
                     type: 'queryResult',
-                    payload: result
+                    // payload: result
+                    success,
+                    result
                 });
             }
         }, undefined, this._disposables);
