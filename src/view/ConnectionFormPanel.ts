@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { ConnectionManager } from '../database/ConnectionManager';
+import { DriverFactory } from '../database/DriverFactory';
 
 export class ConnectionFormPanel {
     public static currentPanel: ConnectionFormPanel | undefined;
@@ -14,20 +16,47 @@ export class ConnectionFormPanel {
 
         this._panel.webview.html = this._getHtml();
 
+        this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
         this._panel.webview.onDidReceiveMessage(
             async message => {
-                switch (message.command) {
+                switch (message.type) {
+                    case 'pickFile':
+                        const fileUri = await vscode.window.showOpenDialog({
+                            canSelectFiles: true,
+                            openLabel: 'Selecionar Banco SQLite',
+                            filters: { 'SQLite': ['db', 'sqlite'], 'All Files': ['*'] }
+                        });
+
+                        if (fileUri && fileUri.length > 0) {
+                            this._panel.webview.postMessage({ type: 'fileSelected', path: fileUri[0].fsPath });
+                        }
+                        break;
                     case 'saveConnection':
-                        vscode.commands.executeCommand('simple-db.saveConnection', message.payload);
-                        this.dispose();
+                        vscode.window.showInformationMessage('Conexão salva com sucesso.');
+                        vscode.commands.executeCommand('simple-db.saveConnection', message.config)
+                        this._panel.dispose();
                         break;
-                    case 'cancel':
-                        this.dispose();
-                        break;
+
                     case 'testConnection':
-                        vscode.commands.executeCommand('simple-db.testConnection', message.payload);
+                        const testConfig = message.config;
+                        try {
+                            await DriverFactory.create(testConfig, testConfig.name || 'teste');
+                            DriverFactory.disconnect(testConfig.name || 'teste');
+                            vscode.window.showInformationMessage('Conexão bem-sucedida!');
+                        } catch (error: any) {
+                            vscode.window.showErrorMessage('Erro ao testar conexão: ' + error.message);
+                        }
+                        break;
+
+                    case 'cancel':
+                        this._panel.dispose();
+                        break;
+
+                    case 'error':
+                        vscode.window.showErrorMessage(message.message);
                         break;
                 }
+
             },
             null,
             this._disposables

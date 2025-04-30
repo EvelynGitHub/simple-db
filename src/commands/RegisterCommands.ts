@@ -4,7 +4,7 @@ import { DatabaseTreeProvider } from '../tree/DatabaseTreeProvider';
 import { TableItem } from '../tree/TableItem';
 import { TableViewPanel } from '../view/TableViewPanel';
 import { DatabaseItem } from '../tree/DatabaseItem';
-import { ConnectionManager } from '../database/ConnectionManager';
+import { ConnectionConfig, ConnectionManager } from '../database/ConnectionManager';
 import { ConnectionFormPanel } from '../view/ConnectionFormPanel';
 import { DriverFactory } from '../database/DriverFactory';
 import { QueryRunnerPanel } from '../view/query/QueryRunnerPanel';
@@ -13,29 +13,30 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
     let uri = context.extensionUri;
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('simple-db.connectDatabase', async () => {
-            const uri = await vscode.window.showOpenDialog({
-                canSelectMany: false,
-                filters: {
-                    'SQLite': ['db', 'sqlite'],
-                    'All Files': ['*']
-                }
-            });
+        vscode.commands.registerCommand('simple-db.refreshDatabases', () => treeProvider.refresh()),
+        // vscode.commands.registerCommand('simple-db.connectDatabase', async () => {
+        //     const uri = await vscode.window.showOpenDialog({
+        //         canSelectMany: false,
+        //         filters: {
+        //             'SQLite': ['db', 'sqlite'],
+        //             'All Files': ['*']
+        //         }
+        //     });
 
-            if (!uri || uri.length === 0) return;
+        //     if (!uri || uri.length === 0) return;
 
-            const filePath = uri[0].fsPath;
-            const dbName = path.basename(filePath);
+        //     const filePath = uri[0].fsPath;
+        //     const dbName = path.basename(filePath);
 
-            const connectionManager = ConnectionManager.getInstance();
-            connectionManager.registerConnection({
-                name: dbName,
-                path: filePath,
-                type: 'sqlite'
-            });
+        //     const connectionManager = ConnectionManager.getInstance();
+        //     connectionManager.registerConnection({
+        //         name: dbName,
+        //         path: filePath,
+        //         type: 'sqlite'
+        //     });
 
-            treeProvider.refresh();
-        }),
+        //     treeProvider.refresh();
+        // }),
         vscode.commands.registerCommand('simple-db.deleteDatabase', async (databaseItem: DatabaseItem) => {
             const confirm = await vscode.window.showWarningMessage(`Remover conexão com ${databaseItem.label}?`, 'Sim', 'Cancelar');
 
@@ -45,9 +46,48 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
                 treeProvider.refresh();
             }
         }),
-        vscode.commands.registerCommand('simple-db.refreshDatabase', async (databaseItem: DatabaseItem) => {
-            console.log('Refresh database', databaseItem);
-            await treeProvider.refresh();
+        vscode.commands.registerCommand('simple-db.refreshDatabase', async (item: DatabaseItem) => {
+            if (!item) {
+                vscode.window.showWarningMessage('Nenhuma conexão selecionada.');
+                return;
+            }
+
+            const dbName = item.label;
+
+            try {
+                const connectionManager = ConnectionManager.getInstance();
+                const config = connectionManager.getConnection(dbName);
+
+                if (!config) {
+                    vscode.window.showErrorMessage(`Conexão ${dbName} não encontrada.`);
+                    return;
+                }
+
+                // Força reconexão
+                await DriverFactory.disconnect(dbName);
+                await DriverFactory.create(config, dbName);
+
+                // Se deu certo:
+                vscode.window.showInformationMessage(`Banco de dados ${dbName} reconectado com sucesso!`);
+                treeProvider.refresh(item); // <-- Atualiza a árvore (vou explicar melhor embaixo)
+            } catch (error: any) {
+                console.error('Erro ao reconectar:', error);
+
+                const choice = await vscode.window.showErrorMessage(
+                    `Erro ao conectar no banco ${dbName}. Deseja remover essa conexão?`,
+                    'Sim', 'Não'
+                );
+
+                if (choice === 'Sim') {
+                    const connectionManager = ConnectionManager.getInstance();
+                    await connectionManager.removeConnection(dbName);
+
+                    // Fecha a Webview se ela estiver aberta para esse banco
+                    TableViewPanel.closeIfConnectedTo(dbName);
+
+                    treeProvider.refresh();
+                }
+            }
         }),
 
         vscode.commands.registerCommand('simple-db.openTable', async (tableItem: TableItem) => {
@@ -65,17 +105,19 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
         })
     );
 
-    // Não testado ainda
     context.subscriptions.push(
-        vscode.commands.registerCommand('simple-db.newConnection', () => {
+        vscode.commands.registerCommand('simple-db.addDatabase', () => {
             ConnectionFormPanel.render(context.extensionUri);
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('simple-db.saveConnection', (config: any) => {
+        vscode.commands.registerCommand('simple-db.saveConnection', (config: ConnectionConfig) => {
             // const dbName = config.name;
             const manager = ConnectionManager.getInstance();
+            if (config.type === 'sqlite') {
+                config.name = path.basename(config.path as string);
+            }
             manager.registerConnection(config);
             treeProvider.refresh();
         })

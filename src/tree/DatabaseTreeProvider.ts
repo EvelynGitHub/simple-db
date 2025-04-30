@@ -19,8 +19,8 @@ export class DatabaseTreeProvider implements vscode.TreeDataProvider<DatabaseIte
         this.connectionManager = ConnectionManager.getInstance();
     }
 
-    refresh(): void {
-        this._onDidChangeTreeData.fire();
+    refresh(item?: DatabaseItem | TableItem | ColumnItem): void {
+        this._onDidChangeTreeData.fire(item);
     }
 
     getTreeItem(element: DatabaseItem): vscode.TreeItem {

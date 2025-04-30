@@ -2,117 +2,243 @@
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nova Conexão</title>
-    <style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adicionar Banco de Dados</title>
+    <!-- <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        input,
+        select,
+        button {
+            margin-top: 5px;
+            margin-bottom: 15px;
+            width: 100%;
+            padding: 6px;
+            box-sizing: border-box;
         }
 
         .hidden {
             display: none;
         }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+    </style> -->
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            padding: 16px 24px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #222;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+
+        input,
+        select {
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #007acc;
+            outline: none;
+        }
+
+        button {
+            background-color: #007acc;
+            border: none;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #005f9e;
+        }
+
+        #path {
+            margin-top: 5px;
+            margin-bottom: 10px;
+            width: fit-content;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        #sqliteFields,
+        #serverFields {
+            margin-top: 15px;
+        }
+
+        input[readonly] {
+            background-color: #eee;
+            color: #444;
+        }
     </style>
+
 </head>
 
 <body>
-    <h2>Nova Conexão</h2>
-    <form id="connectionForm">
-        <label>Nome:
-            <input name="name" required />
+    <h2>Adicionar Banco de Dados</h2>
+
+    <label>Tipo de Banco:
+        <select id="dbType">
+            <option value="sqlite">SQLite</option>
+            <option value="mysql">MySQL</option>
+            <option value="postgres">Postgres</option>
+        </select>
+    </label>
+
+    <div id="sqliteFields">
+        <!-- <div style="display: flex; gap: 10px; align-items: end;">
+            <label style="flex: 1;">Caminho do Arquivo:
+                <input type="text" id="pathDisplay" readonly>
+            </label>
+            <button type="button" id="path" style="margin: 0;">Selecionar</button>
+        </div> -->
+
+        <label>Caminho do Arquivo:
+            <button id="path"> Selecionar arquivo</button>
+            <input type="text" id="pathDisplay" readonly>
         </label>
-        <label>Tipo:
-            <select name="type" id="type">
-                <option value="sqlite">SQLite</option>
-                <option value="mysql">MySQL</option>
-                <option value="postgres">PostgreSQL</option>
-            </select>
+    </div>
+
+    <div id="serverFields" class="hidden">
+        <label>Host:
+            <input id="host" type="text" placeholder="localhost" />
         </label>
+        <label>Usuário:
+            <input id="user" type="text" />
+        </label>
+        <label>Senha:
+            <input id="password" type="password" />
+        </label>
+        <label>Nome do Banco:
+            <input id="database" type="text" />
+        </label>
+    </div>
 
-        <div id="sqliteFields">
-            <label>Caminho do Arquivo:
-                <input name="path" />
-            </label>
-        </div>
-
-        <div id="serverFields" class="hidden">
-            <label>Host:
-                <input name="host" />
-            </label>
-            <label>Usuário:
-                <input name="user" />
-            </label>
-            <label>Senha:
-                <input name="password" type="password" />
-            </label>
-        </div>
-
-        <br />
-        <button type="button" id="testConnection">Testar Conexão</button>
-
-        <button type="submit" id="saveBtn" disabled>Salvar</button>
-        <button type="button" id="cancel">Cancelar</button>
-    </form>
+    <div class="actions">
+        <button id="btnTest">Testar Conexão</button>
+        <button id="btnSave">Salvar Conexão</button>
+        <button id="btnCancel">Cancelar</button>
+    </div>
 
     <script>
         const vscode = acquireVsCodeApi();
-        const form = document.getElementById('connectionForm');
-        const typeSelect = document.getElementById('type');
+
+        const dbTypeSelect = document.getElementById('dbType');
         const sqliteFields = document.getElementById('sqliteFields');
         const serverFields = document.getElementById('serverFields');
-        const saveBtn = document.getElementById('saveBtn');
-        const testBtn = document.getElementById('testConnection');
 
-        function updateVisibility() {
-            const type = typeSelect.value;
-            if (type === 'sqlite') {
+        const btnTest = document.getElementById('btnTest');
+        const btnSave = document.getElementById('btnSave');
+        const btnCancel = document.getElementById('btnCancel');
+        const btnPath = document.getElementById('path');
+
+        const inputPathDisplay = document.getElementById('pathDisplay');
+
+        window.addEventListener('message', event => {
+            const { type, path } = event.data;
+
+            if (type === 'fileSelected') {
+                inputPathDisplay.value = path;
+            }
+        });
+
+        function updateFields() {
+            if (dbTypeSelect.value === 'sqlite') {
                 sqliteFields.classList.remove('hidden');
                 serverFields.classList.add('hidden');
             } else {
                 sqliteFields.classList.add('hidden');
                 serverFields.classList.remove('hidden');
             }
-            validate();
         }
 
-        function validate() {
-            const formData = Object.fromEntries(new FormData(form).entries());
-            const { name, type, path, host, user, password } = formData;
-            let valid = !!name?.trim();
+        dbTypeSelect.addEventListener('change', updateFields);
 
-            if (type === 'sqlite') {
-                valid = valid && !!path?.trim();
+        btnTest.addEventListener('click', () => {
+            const config = getFormData();
+            console.log("Testou: ", config)
+            vscode.postMessage({ type: 'testConnection', config });
+        });
+
+        btnSave.addEventListener('click', () => {
+            const config = getFormData();
+            vscode.postMessage({ type: 'saveConnection', config });
+        });
+
+        btnCancel.addEventListener('click', () => {
+            vscode.postMessage({ type: 'cancel' });
+        });
+
+        btnPath.addEventListener('click', () => {
+            vscode.postMessage({ type: 'pickFile' });
+        });
+
+        function getFormData() {
+            const dbType = dbTypeSelect.value;
+
+            if (dbType === 'sqlite') {
+                return {
+                    type: 'sqlite',
+                    path: inputPathDisplay.value, // <- pega o path do arquivo diretamente
+                };
             } else {
-                valid = valid && !!host?.trim() && !!user?.trim() && !!password?.trim();
+                return {
+                    type: dbType,
+                    host: document.getElementById('host').value.trim(),
+                    user: document.getElementById('user').value.trim(),
+                    password: document.getElementById('password').value.trim(),
+                    database: document.getElementById('database').value.trim()
+                };
             }
-
-            saveBtn.disabled = !valid;
-            testBtn.disabled = !valid;
         }
-
-        form.addEventListener('input', validate);
-        typeSelect.addEventListener('change', updateVisibility);
-
-        form.onsubmit = e => {
-            e.preventDefault();
-            const payload = Object.fromEntries(new FormData(form).entries());
-            vscode.postMessage({ command: 'saveConnection', payload });
-        };
-
-        document.getElementById('cancel').onclick = () => {
-            vscode.postMessage({ command: 'cancel' });
-        };
-
-        testBtn.onclick = () => {
-            const payload = Object.fromEntries(new FormData(form).entries());
-            vscode.postMessage({ command: 'testConnection', payload });
-        };
-
-        updateVisibility();
     </script>
-
 </body>
 
 </html>

@@ -32,8 +32,8 @@
     },
     "commands": [
       {
-        "command": "simple-db.connectDatabase",
-        "title": "Conectar ao banco de dados",
+        "command": "simple-db.addDatabase",
+        "title": "Nova Conexão",
         "icon": "$(add)"
       },
       {
@@ -72,10 +72,6 @@
         "icon": "$(trash)"
       },
       {
-        "command": "simple-db.newConnection",
-        "title": "Nova Conexão"
-      },
-      {
         "command": "simple-db.saveConnection",
         "title": "Salvar Conexão"
       }
@@ -83,7 +79,7 @@
     "menus": {
       "view/title": [
         {
-          "command": "simple-db.connectDatabase",
+          "command": "simple-db.addDatabase",
           "when": "view == simpleDbExplorer",
           "group": "navigation@1"
         },

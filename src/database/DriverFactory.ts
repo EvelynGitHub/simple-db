@@ -1,6 +1,6 @@
 // src/database/DriverFactory.ts
+import * as fs from 'fs'; // <-- importa fs
 import { ConnectionConfig } from './ConnectionManager';
-import { SQLiteDriver } from './drivers/SQLiteDriver';
 import { IDatabaseDriver } from './drivers/IDatabaseDriver';
 
 /**
@@ -26,6 +26,13 @@ export class DriverFactory {
 
         switch (config.type) {
             case 'sqlite': {
+                if (!config.path) {
+                    throw new Error('Caminho do banco de dados SQLite não informado.');
+                }
+
+                if (!fs.existsSync(config.path)) {
+                    throw new Error(`Arquivo do banco de dados não encontrado: ${config.path}`);
+                }
                 const { SQLiteDriver } = await import('./drivers/SQLiteDriver');
                 driver = new SQLiteDriver(config.path!);
                 break;

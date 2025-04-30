@@ -144,7 +144,7 @@ export class TableViewPanel {
 
 	public dispose() {
 		TableViewPanel.currentPanel = undefined;
-		// this._panel.dispose();
+		this._panel.dispose();
 
 		while (this._disposables.length) {
 			const disposable = this._disposables.pop();
@@ -172,4 +172,9 @@ export class TableViewPanel {
 		})
 	}
 
+	public static closeIfConnectedTo(dbName: string) {
+		if (TableViewPanel.currentPanel && TableViewPanel.currentPanel._table.dbName === dbName) {
+			TableViewPanel.currentPanel.dispose();
+		}
+	}
 }
