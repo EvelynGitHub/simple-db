@@ -7,14 +7,13 @@ window.addEventListener('message', event => {
     const { type, payload } = event.data;
 
     columns = event.data.payload.columns;
-    populateSearchColumnSelect(event.data.payload.columns);
-    renderTable(event.data.payload.columns, event.data.payload.data)
+
     if (type === 'renderTable') {
+        renderTable(event.data.payload.columns, event.data.payload.data)
+        populateSearchColumnSelect(event.data.payload.columns);
         tableName = payload.tableName;
         dbName = payload.dbName;
         currentData = payload.data;
-        columns = payload.columns;
-        renderTable();
     }
 });
 

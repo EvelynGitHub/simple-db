@@ -1,50 +1,167 @@
-/* Novo HTML */
-body {
-    font-family: sans-serif;
-    padding: 20px;
+:root {
+    color-scheme: light dark;
 }
 
+body {
+    font-family: var(--vscode-font-family, sans-serif);
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    padding: 24px;
+    font-size: 13px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+/* Busca */
 .toolbar {
     display: flex;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
     margin-bottom: 10px;
 }
 
-#tableContainer {
-    overflow: auto;
+.toolbar .search-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1;
 }
 
+.toolbar .search-group select,
+.toolbar .search-group input[type="text"],
+.toolbar .search-group input[type="search"] {
+    padding: 6px 8px;
+    font-size: 13px;
+    border: 1px solid var(--vscode-input-border);
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border-radius: 2px;
+}
 
-button {
-    padding: 5px 10px;
-    background-color: #007BFF;
-    color: white;
+.toolbar .search-group button {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
     border: none;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 2px;
     cursor: pointer;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
+.toolbar .search-group button:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.toolbar input[type="checkbox"] {
+    margin-left: 6px;
+    transform: scale(1.1);
+}
+
+.options {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 12px;
+}
+
+.options .label-checkbox {
+    display: flex;
+    align-items: center;
+}
+
+/* Ações */
+.actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    justify-content: flex-end;
+}
+
+.actions-row button {
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 2px;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s ease;
+}
+
+#insertBtn {
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+}
+
+#insertBtn:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+#refreshBtn {
+    background-color: transparent;
+    border: 1px solid var(--vscode-editorWidget-border);
+    color: var(--vscode-editor-foreground);
+}
+
+#refreshBtn:hover {
+    background-color: var(--vscode-editorWidget-background);
+}
+
+.actions-row button:last-of-type {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}
+
+.actions-row button:last-of-type:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+/* Tabela */
+#container-table {
+    max-height: 450px;
+    overflow-y: auto;
+    max-height: 400px;
+    overflow-x: auto;
+    border: 1px solid var(--vscode-editorWidget-border);
+    border-radius: 4px;
+}
 
 table {
     border-collapse: collapse;
-    max-width: 100%;
+    width: 100%;
     table-layout: auto;
+    min-width: 600px;
+    font-size: 12px;
+}
+
+thead {
+    background-color: var(--vscode-editorWidget-background);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+thead th {
+    border-bottom: 2px solid var(--vscode-editorWidget-border);
+    padding: 8px 10px;
+    font-weight: bold;
 }
 
 th,
 td {
-    border: 1px solid #ccc;
+    border: 1px solid var(--vscode-editorWidget-border);
+    padding: 6px 10px;
     text-align: left;
-
-    padding: 8px 10px;
-    max-width: 250px;
-    /* limite máximo para evitar colunas gigantes */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    min-width: fit-content;
 }
 
 th:first-child,
@@ -53,6 +170,7 @@ td:first-child {
     text-align: center;
 }
 
+/* Destaques */
 tr.selected {
     background-color: #dbeafe50;
 }
@@ -86,12 +204,6 @@ input[type="checkbox"] {
     cursor: pointer;
 }
 
-small {
-    font-size: 0.75em;
-    color: #666;
-}
-
-tr .invalid,
 .invalid {
     background-color: rgba(255, 0, 0, 0.1);
     outline: 1px solid red;
