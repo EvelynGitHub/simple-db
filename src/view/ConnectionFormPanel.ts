@@ -66,19 +66,22 @@ export class ConnectionFormPanel {
     public static render(extensionUri: vscode.Uri) {
         if (ConnectionFormPanel.currentPanel) {
             ConnectionFormPanel.currentPanel._panel.reveal();
-        } else {
-            const panel = vscode.window.createWebviewPanel(
-                'connectionForm',
-                'Nova Conexão',
-                vscode.ViewColumn.One,
-                {
-                    enableScripts: true,
-                    localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')]
-                }
-            );
-
-            ConnectionFormPanel.currentPanel = new ConnectionFormPanel(panel, extensionUri);
+            return;
         }
+
+        const panel = vscode.window.createWebviewPanel(
+            'connectionForm',
+            'Nova Conexão',
+            vscode.ViewColumn.One,
+            {
+                enableScripts: true,
+                localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
+                retainContextWhenHidden: true
+            }
+        );
+
+        ConnectionFormPanel.currentPanel = new ConnectionFormPanel(panel, extensionUri);
+
     }
 
     private _getHtml(): string {
