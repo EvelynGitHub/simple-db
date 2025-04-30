@@ -4,6 +4,8 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { QueryRunner } from '../../database/QueryRunner';
+import { ConnectionManager } from '../../database/ConnectionManager';
+import { DriverFactory } from '../../database/DriverFactory';
 
 export class QueryRunnerPanel {
     public static currentPanel: QueryRunnerPanel | undefined;
@@ -21,7 +23,7 @@ export class QueryRunnerPanel {
         this._setWebviewMessageListener(this._panel.webview);
     }
 
-    public static render(extensionUri: vscode.Uri, dbName: string) {
+    public static async render(extensionUri: vscode.Uri, dbName: string) {
         if (QueryRunnerPanel.currentPanel) {
             QueryRunnerPanel.currentPanel._panel.reveal(vscode.ViewColumn.One);
         } else {
@@ -37,6 +39,27 @@ export class QueryRunnerPanel {
             );
 
             QueryRunnerPanel.currentPanel = new QueryRunnerPanel(panel, extensionUri, dbName);
+
+            const connectionManager = ConnectionManager.getInstance().getConnection(dbName);
+            const driver = await DriverFactory.create(connectionManager, dbName);
+            const tables = await driver.getTables()
+
+            const columnsByTable: Record<string, string[]> = {};
+
+            for (const table of tables) {
+                const columns = await driver.getColumns(table);
+                columnsByTable[table] = columns.map(col => col.columnName);
+            }
+
+            // Envia para a WebView
+            panel.webview.postMessage({
+                type: 'dbMetadata',
+                payload: {
+                    tables,
+                    columnsByTable
+                }
+            });
+
         }
     }
 
@@ -59,14 +82,17 @@ export class QueryRunnerPanel {
     private _setWebviewMessageListener(webview: vscode.Webview) {
         webview.onDidReceiveMessage(async (message) => {
             if (message.type === 'runQuery') {
+                console.log("\n(1) onDidReceiveMessage.runQuery ", message);
+
                 const query = message.query;
                 const { success, result } = await QueryRunner.runQuery(this._dbName, query);
 
                 this._panel.webview.postMessage({
                     type: 'queryResult',
-                    // payload: result
-                    success,
-                    result
+                    payload: {
+                        success,
+                        result
+                    }
                 });
             }
         }, undefined, this._disposables);
