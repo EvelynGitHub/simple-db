@@ -20,47 +20,55 @@ export class QueryRunnerPanel {
         this._dbName = dbName;
 
         this._panel.webview.html = this._getHtmlForWebview(this._panel.webview);
+        this._panel.onDidDispose(() => this.dispose())
         this._setWebviewMessageListener(this._panel.webview);
     }
 
     public static async render(extensionUri: vscode.Uri, dbName: string) {
         if (QueryRunnerPanel.currentPanel) {
-            QueryRunnerPanel.currentPanel._panel.reveal(vscode.ViewColumn.One);
-        } else {
-            const panel = vscode.window.createWebviewPanel(
-                'queryRunner',
-                `Executar Query - ${dbName}`,
-                vscode.ViewColumn.One,
-                {
-                    enableScripts: true,
-                    localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
-                    retainContextWhenHidden: true
-                }
-            );
+            const confirm = await vscode.window.showWarningMessage(`Já existe um Query Runner aberto: ${QueryRunnerPanel.currentPanel._panel.title}.\n Deseja fecha-lo?`, 'Sim', 'Cancelar')
 
-            QueryRunnerPanel.currentPanel = new QueryRunnerPanel(panel, extensionUri, dbName);
-
-            const connectionManager = ConnectionManager.getInstance().getConnection(dbName);
-            const driver = await DriverFactory.create(connectionManager, dbName);
-            const tables = await driver.getTables()
-
-            const columnsByTable: Record<string, string[]> = {};
-
-            for (const table of tables) {
-                const columns = await driver.getColumns(table);
-                columnsByTable[table] = columns.map(col => col.columnName);
+            if (confirm !== 'Sim') {
+                QueryRunnerPanel.currentPanel._panel.reveal(vscode.ViewColumn.One);
+                return
             }
 
-            // Envia para a WebView
-            panel.webview.postMessage({
-                type: 'dbMetadata',
-                payload: {
-                    tables,
-                    columnsByTable
-                }
-            });
-
+            QueryRunnerPanel.currentPanel._panel.dispose()
         }
+
+        const panel = vscode.window.createWebviewPanel(
+            'queryRunner',
+            `Executar Query - ${dbName}`,
+            vscode.ViewColumn.One,
+            {
+                enableScripts: true,
+                localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')],
+                retainContextWhenHidden: true
+            }
+        );
+
+        QueryRunnerPanel.currentPanel = new QueryRunnerPanel(panel, extensionUri, dbName);
+
+        const connectionManager = ConnectionManager.getInstance().getConnection(dbName);
+        const driver = await DriverFactory.create(connectionManager, dbName);
+        const tables = await driver.getTables()
+
+        const columnsByTable: Record<string, string[]> = {};
+
+        for (const table of tables) {
+            const columns = await driver.getColumns(table);
+            columnsByTable[table] = columns.map(col => col.columnName);
+        }
+
+        // Envia para a WebView
+        panel.webview.postMessage({
+            type: 'dbMetadata',
+            payload: {
+                tables,
+                columnsByTable
+            }
+        });
+
     }
 
     private _getHtmlForWebview(webview: vscode.Webview): string {

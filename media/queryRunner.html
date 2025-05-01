@@ -105,6 +105,11 @@
             margin-top: 4px;
             margin-bottom: 5px;
         }
+
+        .autocomplete-item.selected {
+            background-color: var(--vscode-editorSuggestWidget-selectedBackground);
+            color: var(--vscode-editorSuggestWidget-selectedForeground);
+        }
     </style>
 
 </head>
@@ -137,8 +142,9 @@
         const vscode = acquireVsCodeApi();
         let dbTables = [];
         let dbColumnsByTable = {};
+        let selectedIndex = -1;
         const sqlKeywords = [
-            'SELECT', 'FROM', 'WHERE', 'JOIN', 'INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN',
+            'SELECT', 'FROM', 'WHERE', 'AND', 'IN', 'OR', 'JOIN', 'ON', 'INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN',
             'GROUP BY', 'ORDER BY', 'LIMIT', 'INSERT INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE',
             'CREATE TABLE', 'DROP TABLE', 'ALTER TABLE', 'ADD COLUMN'
         ];
@@ -204,21 +210,87 @@
             }
         });
 
+        textareaQuery.addEventListener('keydown', (e) => {
+            const items = Array.from(autocomplete.children);
+
+            if (e.key === 'ArrowDown') {
+                if (autocomplete.style.display === 'block') {
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex + 1) % items.length;
+                    highlightSelected();
+                }
+            }
+
+            if (e.key === 'ArrowUp') {
+                if (autocomplete.style.display === 'block') {
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+                    highlightSelected();
+                }
+            }
+
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                if (autocomplete.style.display === 'block' && selectedIndex >= 0) {
+                    e.preventDefault();
+                    const selected = items[selectedIndex];
+                    if (selected) insertSuggestion(selected.textContent);
+                    clearSuggestions();
+                }
+            }
+
+            if (e.key === 'Escape') {
+                clearSuggestions();
+            }
+        });
+
+        // function showSuggestions(suggestions, textarea) {
+        //     const rect = textarea.getBoundingClientRect();
+        //     autocomplete.innerHTML = '';
+        //     suggestions.forEach(s => {
+        //         const div = document.createElement('div');
+        //         div.textContent = s;
+        //         div.style.padding = '4px 8px';
+        //         div.style.cursor = 'pointer';
+        //         div.addEventListener('click', () => insertSuggestion(s));
+        //         div.addEventListener('mouseover', () => div.style.background = 'var(--vscode-editor-hoverHighlightBackground)');
+        //         div.addEventListener('mouseout', () => div.style.background = 'transparent');
+        //         autocomplete.appendChild(div);
+        //     });
+
+        //     // Posiciona abaixo do textareaQuery
+        //     autocomplete.style.left = rect.left + 'px';
+        //     autocomplete.style.top = (rect.bottom + window.scrollY) + 'px';
+        //     autocomplete.style.width = rect.width + 'px';
+        //     autocomplete.style.display = 'block';
+        // }
+
+
         function showSuggestions(suggestions, textarea) {
+            clearSuggestions();
+            if (suggestions.length === 0) return;
+
             const rect = textarea.getBoundingClientRect();
-            autocomplete.innerHTML = '';
-            suggestions.forEach(s => {
+
+            suggestions.forEach((s, index) => {
                 const div = document.createElement('div');
                 div.textContent = s;
                 div.style.padding = '4px 8px';
                 div.style.cursor = 'pointer';
+                div.className = 'autocomplete-item';
+
+                if (index === selectedIndex) {
+                    div.classList.add('selected');
+                }
+
                 div.addEventListener('click', () => insertSuggestion(s));
-                div.addEventListener('mouseover', () => div.style.background = 'var(--vscode-editor-hoverHighlightBackground)');
-                div.addEventListener('mouseout', () => div.style.background = 'transparent');
+                div.addEventListener('mouseover', () => {
+                    selectedIndex = index;
+                    highlightSelected();
+                });
+
                 autocomplete.appendChild(div);
             });
 
-            // Posiciona abaixo do textareaQuery
             autocomplete.style.left = rect.left + 'px';
             autocomplete.style.top = (rect.bottom + window.scrollY) + 'px';
             autocomplete.style.width = rect.width + 'px';
@@ -228,30 +300,60 @@
         function insertSuggestion(text) {
             // const start = textareaQuery.selectionStart;
             // const value = textareaQuery.value;
-            // const before = value.slice(0, start).replace(/\w*$/, '');
-            // const after = value.slice(start);
-            // textareaQuery.value = before + text + after;
+
+            // // Encontrar a palavra atual (última palavra digitada)
+            // const before = value.slice(0, start);
+            // const match = before.match(/(\w*)$/); // última palavra
+            // const wordStart = match ? start - match[1].length : start;
+
+            // // Montar novo valor com substituição apenas da última palavra
+            // const newValue = value.slice(0, wordStart) + text + value.slice(start);
+            // textareaQuery.value = newValue;
+
+            // // Posicionar o cursor após a sugestão inserida
+            // const newPos = wordStart + text.length;
+            // textareaQuery.setSelectionRange(newPos, newPos);
             // textareaQuery.focus();
+
             // autocomplete.style.display = 'none';
-            const start = textareaQuery.selectionStart;
-            const value = textareaQuery.value;
+            const cursorPos = textareaQuery.selectionStart;
+            const textBefore = textareaQuery.value.slice(0, cursorPos);
+            const textAfter = textareaQuery.value.slice(cursorPos);
 
-            // Encontrar a palavra atual (última palavra digitada)
-            const before = value.slice(0, start);
-            const match = before.match(/(\w*)$/); // última palavra
-            const wordStart = match ? start - match[1].length : start;
+            const match = textBefore.match(/(\w+)$/);
+            const lastWord = match ? match[1] : '';
+            const newTextBefore = match
+                ? textBefore.slice(0, -lastWord.length) + text
+                : textBefore + text;
 
-            // Montar novo valor com substituição apenas da última palavra
-            const newValue = value.slice(0, wordStart) + text + value.slice(start);
-            textareaQuery.value = newValue;
-
-            // Posicionar o cursor após a sugestão inserida
-            const newPos = wordStart + text.length;
-            textareaQuery.setSelectionRange(newPos, newPos);
+            textareaQuery.value = newTextBefore + textAfter;
+            textareaQuery.selectionStart = textareaQuery.selectionEnd = newTextBefore.length;
             textareaQuery.focus();
 
-            autocomplete.style.display = 'none';
+            clearSuggestions();
         }
+
+        function clearSuggestions() {
+            autocomplete.innerHTML = '';
+            autocomplete.style.display = 'none';
+            selectedIndex = -1;
+        }
+
+        function highlightSelected() {
+            const children = autocomplete.children;
+            for (let i = 0; i < children.length; i++) {
+                const isSelected = i === selectedIndex;
+                children[i].classList.toggle('selected', isSelected);
+                if (isSelected) {
+                    children[i].scrollIntoView({
+                        block: 'nearest',
+                        behavior: 'auto'
+                    });
+                }
+            }
+        }
+
+
         // Esconde quando clicar fora
         document.addEventListener('click', (e) => {
             if (!autocomplete.contains(e.target)) {
