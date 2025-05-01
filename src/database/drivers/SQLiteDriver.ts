@@ -50,24 +50,85 @@ export class SQLiteDriver implements IDatabaseDriver {
     }
 
 
-    async insertRow(table: string, row: Record<string, any>) {
-        const keys = Object.keys(row);
-        const values = keys.map(k => row[k]);
+    async insertRow(table: string, data: Record<string, any> | Record<string, any>[]) {
+        const rows = Array.isArray(data) ? data : [data];
+
+        if (rows.length === 0) return;
+
+        const keys = Object.keys(rows[0]);
         const placeholders = keys.map(() => '?').join(', ');
-        await this.db.run(`INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`, values);
+        const sql = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`;
+
+        await this.db.run('BEGIN TRANSACTION');
+        try {
+            const stmt = await this.db.prepare(sql);
+
+            for (const row of rows) {
+                const values = keys.map(k => row[k]);
+                await stmt.run(values);
+            }
+
+            await stmt.finalize(); // Libera o statement preparado
+            await this.db.run('COMMIT');
+        } catch (error) {
+            await this.db.run('ROLLBACK');
+            throw error;
+        }
     }
 
-    async updateRow(table: string, primaryKeyColumn: string, primaryKeyValue: any, row: Record<string, any>) {
+    // async updateRow(table: string, primaryKeyColumn: string, primaryKeyValue: any, row: Record<string, any>) {
 
-        const sets = Object.keys(row).map(key => `${key} = ?`).join(', ');
-        const values = Object.values(row);
+    //     const sets = Object.keys(row).map(key => `${key} = ?`).join(', ');
+    //     const values = Object.values(row);
 
-        values.push(primaryKeyValue);
+    //     values.push(primaryKeyValue);
 
-        const sql = `UPDATE ${table} SET ${sets} WHERE ${primaryKeyColumn} = ?`;
+    //     const sql = `UPDATE ${table} SET ${sets} WHERE ${primaryKeyColumn} = ?`;
 
-        await this.db.run(sql, values);
+    //     await this.db.run(sql, values);
+    // }
+
+    async updateRow(table: string, data: Record<string, any> | Record<string, any>[]): Promise<number> {
+        const rows = Array.isArray(data) ? data : [data];
+        if (rows.length === 0) return 0;
+
+        // Detecta as chaves primárias da tabela
+        const pragma = await this.db.all(`PRAGMA table_info(${table})`);
+        const pkColumns = pragma.filter(col => col.pk > 0).sort((a, b) => a.pk - b.pk).map(col => col.name);
+
+        if (pkColumns.length === 0) {
+            throw new Error(`Não foi possível encontrar a chave primária da tabela "${table}".`);
+        }
+
+        const sample = rows[0];
+        const keys = Object.keys(sample).filter(k => !pkColumns.includes(k));
+        const setClause = keys.map(k => `${k} = ?`).join(', ');
+        const whereClause = pkColumns.map(k => `${k} = ?`).join(' AND ');
+        const sql = `UPDATE ${table} SET ${setClause} WHERE ${whereClause}`;
+
+        let totalUpdated = 0;
+
+        await this.db.run('BEGIN TRANSACTION');
+        try {
+            const stmt = await this.db.prepare(sql);
+
+            for (const row of rows) {
+                const setValues = keys.map(k => row[k]);
+                const whereValues = pkColumns.map(k => row[k]);
+                const result = await stmt.run([...setValues, ...whereValues]);
+                totalUpdated += result.changes ?? 0;
+            }
+
+            await stmt.finalize();
+            await this.db.run('COMMIT');
+        } catch (error) {
+            await this.db.run('ROLLBACK');
+            throw error;
+        }
+
+        return totalUpdated;
     }
+
 
     async deleteRow(tableName: string, primaryKeyColumn: string, primaryKeyValue: any): Promise<void> {
         const sql = `DELETE FROM ${tableName} WHERE ${primaryKeyColumn} = ?`;

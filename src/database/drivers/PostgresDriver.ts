@@ -79,18 +79,20 @@ export class PostgresDriver implements IDatabaseDriver {
         );
     }
 
-    async updateRow(tableName: string, primaryKey: string, data: any): Promise<void> {
-        const id = data[primaryKey];
-        delete data[primaryKey];
+    async updateRow(table: string, data: Record<string, any> | Record<string, any>[]): Promise<number> {
+        // const id = data[primaryKey];
+        // delete data[primaryKey];
 
-        const keys = Object.keys(data);
-        const values = Object.values(data);
-        const setClause = keys.map((key, index) => `"${key}" = $${index + 1}`).join(',');
+        // const keys = Object.keys(data);
+        // const values = Object.values(data);
+        // const setClause = keys.map((key, index) => `"${key}" = $${index + 1}`).join(',');
 
-        await this.client.query(
-            `UPDATE "${tableName}" SET ${setClause} WHERE "${primaryKey}" = $${keys.length + 1}`,
-            [...values, id]
-        );
+        // await this.client.query(
+        //     `UPDATE "${table}" SET ${setClause} WHERE "${}" = $${keys.length + 1}`,
+        //     [...values, id]
+        // );
+
+        return 0;
     }
 
     async deleteRow(tableName: string, primaryKeyValue: any): Promise<void> {

@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { TableItem } from '../tree/TableItem';
 import { DriverFactory } from '../database/DriverFactory';
+import { IDatabaseDriver } from '../database/drivers/IDatabaseDriver';
 
 export class TableViewPanel {
 
@@ -115,7 +116,8 @@ export class TableViewPanel {
 							this._sendForHtmlWebview();
 							break;
 						case 'update':
-							await driver.updateRow(this._table.tableName, message.primaryKey, message.primaryKeyValue, message.data);
+							// await driver.updateRow(this._table.tableName, message.primaryKey, message.primaryKeyValue, message.data);
+							await driver.updateRow(this._table.tableName, message.data);
 							vscode.window.showInformationMessage('Atualizar registros selecionados');
 							this._sendForHtmlWebview();
 							break;
@@ -131,6 +133,9 @@ export class TableViewPanel {
 						case 'search':
 							this._sendForHtmlWebview(message.value, message.column);
 							vscode.window.showInformationMessage(`Buscar por: ${message.value} na coluna ${message.column}`);
+							break;
+						case 'saveAll':
+							this.saveDataAll(driver, message.insert, message.update);
 							break;
 					}
 				} catch (error: any) {
@@ -176,5 +181,21 @@ export class TableViewPanel {
 		if (TableViewPanel.currentPanel && TableViewPanel.currentPanel._table.dbName === dbName) {
 			TableViewPanel.currentPanel.dispose();
 		}
+	}
+
+	public async saveDataAll(driver: IDatabaseDriver, inserts: [], updates: []) {
+		await driver.insertRow(this._table.tableName, inserts);
+
+		if (updates.length > 50) {
+			const confirm = await vscode.window.showWarningMessage(`Tem certeza que deseja atualizar ${updates.length} linhas?`, 'Sim', 'Cancelar');
+
+			if (confirm !== 'Sim') {
+				return;
+			}
+		}
+
+		await driver.updateRow(this._table.tableName, updates);
+
+		vscode.window.showInformationMessage(`Dados salvos com sucesso.`);
 	}
 }

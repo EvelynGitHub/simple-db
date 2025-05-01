@@ -69,10 +69,12 @@ export class MySQLDriver implements IDatabaseDriver {
         await this.connection.query(`INSERT INTO \`${tableName}\` SET ?`, [data]);
     }
 
-    async updateRow(tableName: string, primaryKey: string, data: any): Promise<void> {
-        const id = data[primaryKey];
-        delete data[primaryKey];
-        await this.connection.query(`UPDATE \`${tableName}\` SET ? WHERE \`${primaryKey}\` = ?`, [data, id]);
+    // async updateRow(tableName: string, primaryKey: string, data: any): Promise<void> {
+    async updateRow(table: string, data: Record<string, any> | Record<string, any>[]): Promise<number> {
+        // const id = data[primaryKey];
+        // delete data[primaryKey];
+        // await this.connection.query(`UPDATE \`${table}\` SET ? WHERE \`${primaryKey}\` = ?`, [data, id]);
+        return 0;
     }
 
     async deleteRow(tableName: string, primaryKeyValue: any): Promise<void> {
