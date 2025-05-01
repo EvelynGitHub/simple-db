@@ -157,7 +157,7 @@ function createDataCell(col, value, tr) {
         td.contentEditable = !col.isAutoIncrement;
         td.innerText = value ?? '';
         td.onkeydown = (e) => {
-            if (e.key === 'Enter' && $('auto-save-toggle')?.checked) {
+            if (e.key === 'Enter' && $('autoSave')?.checked) {
                 e.preventDefault();
                 saveRow(tr.querySelector('.action-icon'));
             }
@@ -350,6 +350,11 @@ function saveAll() {
 
     const payload = { insert, update };
 
+
+    vscode.postMessage({
+        type: 'saveAll',
+        insert, update
+    });
     console.log('Salvar para API:', payload);
 }
 
