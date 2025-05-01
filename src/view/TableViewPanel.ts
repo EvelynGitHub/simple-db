@@ -117,7 +117,7 @@ export class TableViewPanel {
 							break;
 						case 'update':
 							// await driver.updateRow(this._table.tableName, message.primaryKey, message.primaryKeyValue, message.data);
-							await driver.updateRow(this._table.tableName, message.data);
+							await driver.updateRow(this._table.tableName, message.data, message.originalKeys);
 							vscode.window.showInformationMessage('Atualizar registros selecionados');
 							this._sendForHtmlWebview();
 							break;
@@ -166,8 +166,6 @@ export class TableViewPanel {
 
 		const columns = this._table.columns;
 
-		// console.log('Enviando dados para o HTML COLUNAS', this._table);
-
 		this._panel.webview.postMessage({
 			type: 'renderTable',
 			payload: {
@@ -194,7 +192,7 @@ export class TableViewPanel {
 			}
 		}
 
-		await driver.updateRow(this._table.tableName, updates);
+		await driver.updateRows(this._table.tableName, updates);
 
 		vscode.window.showInformationMessage(`Dados salvos com sucesso.`);
 	}

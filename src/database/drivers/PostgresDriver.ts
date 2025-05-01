@@ -95,6 +95,10 @@ export class PostgresDriver implements IDatabaseDriver {
         return 0;
     }
 
+    async updateRows(table: string, data: Record<string, any> | Record<string, any>[]): Promise<number> {
+        return 0;
+    }
+
     async deleteRow(tableName: string, primaryKeyValue: any): Promise<void> {
         await this.client.query(`DELETE FROM "${tableName}" WHERE id = $1`, [primaryKeyValue]);
     }

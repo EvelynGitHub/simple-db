@@ -22,6 +22,7 @@ export class SQLiteDriver implements IDatabaseDriver {
 
     async getColumns(table: string): Promise<ColumnItem[]> {
         const rows = await this.db.all(`PRAGMA table_info(${table})`);
+        console.log("Dados das COLUNAS: ", rows);
         return rows.map(r => new ColumnItem(
             r.name,
             r.type,
@@ -29,9 +30,9 @@ export class SQLiteDriver implements IDatabaseDriver {
             null,
             r.dflt_value,
             r.notnull === 1,
-            r.pk === 1,
+            r.pk > 0,
             r.unique === 1,
-            r.pk === 1 && r.type === 'INTEGER' && r.dflt_value === 'AUTOINCREMENT'
+            r.pk > 0 && r.type === 'INTEGER' && r.dflt_value === 'AUTOINCREMENT'
         ));
     }
 
@@ -76,19 +77,30 @@ export class SQLiteDriver implements IDatabaseDriver {
         }
     }
 
-    // async updateRow(table: string, primaryKeyColumn: string, primaryKeyValue: any, row: Record<string, any>) {
+    async updateRow(table: string, data: Record<string, any> | Record<string, any>[], keys: any): Promise<number> {
 
-    //     const sets = Object.keys(row).map(key => `${key} = ?`).join(', ');
-    //     const values = Object.values(row);
+        const columnsToUpdate = Object.keys(data);
+        const valuesToUpdate = Object.values(data);
 
-    //     values.push(primaryKeyValue);
+        const whereColumns = Object.keys(keys);
+        const whereValues = Object.values(keys);
 
-    //     const sql = `UPDATE ${table} SET ${sets} WHERE ${primaryKeyColumn} = ?`;
+        // Monta os SETs e WHEREs com placeholders
+        const setClause = columnsToUpdate.map(col => `${col} = ?`).join(', ');
+        const whereClause = whereColumns.map(col => `${col} = ?`).join(' AND ');
 
-    //     await this.db.run(sql, values);
-    // }
+        // Monta a query final
+        const query = `UPDATE ${table} SET ${setClause} WHERE ${whereClause}`;
 
-    async updateRow(table: string, data: Record<string, any> | Record<string, any>[]): Promise<number> {
+        // Junta os valores na ordem correta: primeiro os do SET, depois os do WHERE
+        const values = [...valuesToUpdate, ...whereValues];
+
+        // Executa a query preparada
+        this.db.run(query, ...values);
+        return 1;
+    }
+
+    async updateRows(table: string, data: Record<string, any> | Record<string, any>[]): Promise<number> {
         const rows = Array.isArray(data) ? data : [data];
         if (rows.length === 0) return 0;
 

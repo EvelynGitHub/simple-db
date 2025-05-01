@@ -113,7 +113,15 @@ function createRow(data = {}, isNew = false, index = null) {
     if (index !== null) tr.dataset.index = index;
 
     tr.appendChild(createActionsCell(tr));
-    columns.forEach(col => tr.appendChild(createDataCell(col, data[col.columnName] ?? null, tr)));
+
+    columns.forEach(col => {
+        // Armazena valor original da PK/FK diretamente na tr
+        if (col.primaryKey || col.foreignKey) {
+            tr.dataset[`original_${col.columnName}`] = data[col.columnName];
+        }
+
+        tr.appendChild(createDataCell(col, data[col.columnName] ?? null, tr));
+    });
 
     return tr;
 }
@@ -172,34 +180,49 @@ function saveRow(icon) {
     const tr = icon.closest('tr');
     const footer = $('table-footer');
     footer.innerHTML = '';
+
     if (!validateRow(tr)) {
         footer.innerHTML = `<tr><th colspan="${tr.children.length}">Há campos obrigatórios não preenchidos ou com formato inválido!</th></tr>`;
         return;
     }
 
-    const pkCell = tr.querySelector('[data-primary-key="true"]');
-    if (!pkCell) {
-        console.error("Chave primária não encontrada na linha.");
-        return;
-    }
-
-    const primaryKey = pkCell.dataset.column;
-    const primaryKeyValue = pkCell.dataset.value.trim();
     const isNewRow = tr.classList.contains('new-row');
     const isEditedRow = tr.classList.contains('edited');
     const data = getRowData(tr);
+
+    // const pkCell = tr.querySelector('[data-primary-key="true"]');
+    // if (!pkCell) {
+    //     console.error("Chave primária não encontrada na linha.");
+    //     return;
+    // }
+    // const primaryKey = pkCell.dataset.column;
+    // const primaryKeyValue = pkCell.dataset.value.trim();
+
+    // Obtem todas as PKs originais salvas no tr
+    const originalKeys = {};
+    columns.forEach(col => {
+        if (col.primaryKey || col.foreignKey) {
+            originalKeys[col.columnName] = tr.dataset[`original_${col.columnName}`];
+        }
+    });
 
     if (isNewRow) {
         vscode.postMessage({
             type: 'insert',
             data,
         });
-    } else if (isEditedRow && primaryKeyValue) {
+    } else if (isEditedRow && originalKeys) {
         vscode.postMessage({
             type: 'update',
-            primaryKey,
-            primaryKeyValue,
+            originalKeys,
             data,
+        });
+
+        // Atualiza os dados originais após o update
+        columns.forEach(col => {
+            if (col.primaryKey || col.foreignKey) {
+                tr.dataset[`original_${col.columnName}`] = data[col.columnName];
+            }
         });
     }
 
