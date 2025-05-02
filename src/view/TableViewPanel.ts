@@ -15,6 +15,7 @@ interface MessagePayload {
 	page: number;
 	totalPages: number;
 	pageSize: number;
+	autoSave: boolean;
 }
 
 interface MessageBase {
@@ -211,6 +212,7 @@ export class TableViewPanel {
 				page: this._currentPage,
 				totalPages: this._totalPages,
 				pageSize: this._pageSize,
+				autoSave: ExtensionConfig.get().autoSave
 			},
 		};
 

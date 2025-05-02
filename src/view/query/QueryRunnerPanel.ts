@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import { QueryRunner } from '../../database/QueryRunner';
 import { ConnectionManager } from '../../database/ConnectionManager';
 import { DriverFactory } from '../../database/DriverFactory';
+import { ExtensionConfig } from '../../utils/Config';
 
 export class QueryRunnerPanel {
     public static currentPanel: QueryRunnerPanel | undefined;
@@ -49,26 +50,27 @@ export class QueryRunnerPanel {
 
         QueryRunnerPanel.currentPanel = new QueryRunnerPanel(panel, extensionUri, dbName);
 
-        const connectionManager = ConnectionManager.getInstance().getConnection(dbName);
-        const driver = await DriverFactory.create(connectionManager, dbName);
-        const tables = await driver.getTables()
+        if (ExtensionConfig.get().autoComplete) {
+            const connectionManager = ConnectionManager.getInstance().getConnection(dbName);
+            const driver = await DriverFactory.create(connectionManager, dbName);
+            const tables = await driver.getTables()
 
-        const columnsByTable: Record<string, string[]> = {};
+            const columnsByTable: Record<string, string[]> = {};
 
-        for (const table of tables) {
-            const columns = await driver.getColumns(table);
-            columnsByTable[table] = columns.map(col => col.columnName);
-        }
-
-        // Envia para a WebView
-        panel.webview.postMessage({
-            type: 'dbMetadata',
-            payload: {
-                tables,
-                columnsByTable
+            for (const table of tables) {
+                const columns = await driver.getColumns(table);
+                columnsByTable[table] = columns.map(col => col.columnName);
             }
-        });
 
+            // Envia para a WebView
+            panel.webview.postMessage({
+                type: 'dbMetadata',
+                payload: {
+                    tables,
+                    columnsByTable
+                }
+            });
+        }
     }
 
     private _getHtmlForWebview(webview: vscode.Webview): string {

@@ -17,6 +17,7 @@ window.addEventListener('message', event => {
         renderFullTable(columns, payload.data);
         populateSearchColumnSelect(payload.columns);
         updatePagination();
+        $('autoSave').checked = payload.autoSave
 
         // renderTable(event.data.payload.columns, event.data.payload.data)
         // tableName = payload.tableName;

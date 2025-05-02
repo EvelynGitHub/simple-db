@@ -2,44 +2,44 @@ import * as vscode from 'vscode';
 import { ExtensionConfig } from '../utils/Config';
 
 export class SettingsPanel {
-    public static currentPanel: SettingsPanel | undefined;
-    private readonly _panel: vscode.WebviewPanel;
+  public static currentPanel: SettingsPanel | undefined;
+  private readonly _panel: vscode.WebviewPanel;
 
-    private constructor(panel: vscode.WebviewPanel) {
-        this._panel = panel;
+  private constructor(panel: vscode.WebviewPanel) {
+    this._panel = panel;
 
-        this._panel.webview.html = this._getHtml();
-        this._panel.webview.onDidReceiveMessage(async message => {
-            if (message.type === 'saveSettings') {
-                try {
-                    await ExtensionConfig.updateAll(message.settings);
-                    vscode.window.showInformationMessage('Configurações salvas com sucesso!');
-                } catch (error: any) {
-                    console.log(error)
-                    vscode.window.showErrorMessage('Erro ao salvar configurações: ' + error.message);
-                }
-                // break;
-                // await ExtensionConfig.update(message.settings);
-                // vscode.window.showInformationMessage('Configurações salvas! Atualize para aplicar.');
-            }
-        });
-    }
+    this._panel.webview.html = this._getHtml();
+    this._panel.webview.onDidReceiveMessage(async message => {
+      if (message.type === 'saveSettings') {
+        try {
+          await ExtensionConfig.updateAll(message.settings);
+          vscode.window.showInformationMessage('Configurações salvas com sucesso!');
+        } catch (error: any) {
+          console.log(error)
+          vscode.window.showErrorMessage('Erro ao salvar configurações: ' + error.message);
+        }
+        // break;
+        // await ExtensionConfig.update(message.settings);
+        // vscode.window.showInformationMessage('Configurações salvas! Atualize para aplicar.');
+      }
+    });
+  }
 
-    public static createOrShow(extensionUri: vscode.Uri) {
-        const panel = vscode.window.createWebviewPanel(
-            'simpleDbSettings',
-            'SimpleDB - Configurações',
-            vscode.ViewColumn.One,
-            { enableScripts: true }
-        );
+  public static createOrShow(extensionUri: vscode.Uri) {
+    const panel = vscode.window.createWebviewPanel(
+      'simpleDbSettings',
+      'SimpleDB - Configurações',
+      vscode.ViewColumn.One,
+      { enableScripts: true, retainContextWhenHidden: true, }
+    );
 
-        SettingsPanel.currentPanel = new SettingsPanel(panel);
-    }
+    SettingsPanel.currentPanel = new SettingsPanel(panel);
+  }
 
-    private _getHtml() {
-        const config = ExtensionConfig.get();
+  private _getHtml() {
+    const config = ExtensionConfig.get();
 
-        return `
+    return `
       <!DOCTYPE html>
       <html lang="pt-BR">
       <head>
@@ -85,5 +85,5 @@ export class SettingsPanel {
       </body>
       </html>
     `;
-    }
+  }
 }

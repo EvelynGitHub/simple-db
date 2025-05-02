@@ -31,8 +31,7 @@ export class ExtensionConfig {
         );
     }
 
-
-    static get() {
+    static get(): ConfigSchema {
         const config = vscode.workspace.getConfiguration(this.key);
         return {
             pageSize: config.get<number>('pageSize') ?? 5,
