@@ -131,6 +131,27 @@
           "group": "inline"
         }
       ]
+    },
+    "configuration": {
+      "title": "Simple DB",
+      "properties": {
+        "simpleDb.pageSize": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "description": "Número de registros exibidos por página na tabela."
+        },
+        "simpleDb.autoSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se verdadeiro, alterações são salvas automaticamente ao editar."
+        },
+        "simpleDb.autoComplete": {
+          "type": "boolean",
+          "default": true,
+          "description": "Habilita sugestões automáticas ao editar valores."
+        }
+      }
     }
   },
   "activationEvents": [

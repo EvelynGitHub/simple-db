@@ -8,6 +8,7 @@ import { ConnectionConfig, ConnectionManager } from '../database/ConnectionManag
 import { ConnectionFormPanel } from '../view/ConnectionFormPanel';
 import { DriverFactory } from '../database/DriverFactory';
 import { QueryRunnerPanel } from '../view/query/QueryRunnerPanel';
+import { SettingsPanel } from '../view/SettingsPanel';
 
 export function RegisterCommands(context: vscode.ExtensionContext, treeProvider: DatabaseTreeProvider) {
     let uri = context.extensionUri;
@@ -102,6 +103,12 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
                 await fillColumns(tableItem);
                 TableViewPanel.renderNew(uri, tableItem);
             }
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('simple-db.settingsSimpleDb', () => {
+            SettingsPanel.createOrShow(context.extensionUri);
         })
     );
 

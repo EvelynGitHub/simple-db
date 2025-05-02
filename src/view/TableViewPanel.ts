@@ -7,6 +7,7 @@ import { TableItem } from '../tree/TableItem';
 import { DriverFactory } from '../database/DriverFactory';
 import { IDatabaseDriver } from '../database/drivers/IDatabaseDriver';
 import { ColumnItem } from '../tree/ColumnItem';
+import { ExtensionConfig } from '../utils/Config';
 
 interface MessagePayload {
 	data: any[]; // Ou o tipo correto dos seus dados
@@ -28,7 +29,7 @@ export class TableViewPanel {
 	private readonly _extensionUri: vscode.Uri;
 	private _disposables: vscode.Disposable[] = [];
 	private _table: TableItem;
-	private _pageSize = 5;
+	private _pageSize = ExtensionConfig.get().pageSize;
 	private _currentPage = 1;
 	private _totalPages = 1;
 
@@ -36,9 +37,7 @@ export class TableViewPanel {
 		this._panel = panel;
 		this._extensionUri = extensionUri;
 		this._table = table;
-		this._pageSize = vscode.workspace.getConfiguration('simpleDb').get('pageSize') || 5;
 		this._currentPage = 1;
-		// this._loadPage();
 
 		// Quando o painel for fechado, chama dispose
 		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
