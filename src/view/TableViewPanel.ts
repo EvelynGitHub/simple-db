@@ -136,6 +136,7 @@ export class TableViewPanel {
 							break;
 						case 'saveAll':
 							this.saveDataAll(driver, message.insert, message.update);
+							this._sendForHtmlWebview();
 							break;
 					}
 				} catch (error: any) {
@@ -182,18 +183,24 @@ export class TableViewPanel {
 	}
 
 	public async saveDataAll(driver: IDatabaseDriver, inserts: [], updates: []) {
-		await driver.insertRow(this._table.tableName, inserts);
+		try {
 
-		if (updates.length > 50) {
-			const confirm = await vscode.window.showWarningMessage(`Tem certeza que deseja atualizar ${updates.length} linhas?`, 'Sim', 'Cancelar');
+			await driver.insertRow(this._table.tableName, inserts);
 
-			if (confirm !== 'Sim') {
-				return;
+			if (updates.length > 50) {
+				const confirm = await vscode.window.showWarningMessage(`Tem certeza que deseja atualizar ${updates.length} linhas?`, 'Sim', 'Cancelar');
+
+				if (confirm !== 'Sim') {
+					return;
+				}
 			}
+
+			await driver.updateRows(this._table.tableName, updates);
+
+			vscode.window.showInformationMessage(`Dados salvos com sucesso.`);
+		} catch (error) {
+			console.error(error);
+			vscode.window.showErrorMessage("Um erro inesperado aconteceu.");
 		}
-
-		await driver.updateRows(this._table.tableName, updates);
-
-		vscode.window.showInformationMessage(`Dados salvos com sucesso.`);
 	}
 }

@@ -16,9 +16,8 @@ export interface IDatabaseDriver {
     getAllRows(table: string, searchText?: string, column?: string): Promise<any[]>;
 
     insertRow(table: string, row: Record<string, any>): Promise<void>;
-    // updateRow(table: string, primaryKeyColumn: string, primaryKeyValue: any, row: Record<string, any>): Promise<void>;
     updateRow(table: string, data: Record<string, any> | Record<string, any>[], keys: any): Promise<number>;
-    updateRows(table: string, data: Record<string, any> | Record<string, any>[]): Promise<number>;
+    updateRows(table: string, updates: { data: Record<string, any>, originalKeys: Record<string, any> }[]): Promise<number>;
     deleteRow(tableName: string, primaryKeyColumn: string, primaryKeyValue: any): Promise<void>;
 
     /** Novo método para execução de queries livres */

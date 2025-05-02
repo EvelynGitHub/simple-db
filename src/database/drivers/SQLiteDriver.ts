@@ -100,22 +100,15 @@ export class SQLiteDriver implements IDatabaseDriver {
         return 1;
     }
 
-    async updateRows(table: string, data: Record<string, any> | Record<string, any>[]): Promise<number> {
-        const rows = Array.isArray(data) ? data : [data];
-        if (rows.length === 0) return 0;
+    async updateRows(table: string, updates: { data: Record<string, any>, originalKeys: Record<string, any> }[]): Promise<number> {
+        if (!Array.isArray(updates) || updates.length === 0) return 0;
 
-        // Detecta as chaves primárias da tabela
-        const pragma = await this.db.all(`PRAGMA table_info(${table})`);
-        const pkColumns = pragma.filter(col => col.pk > 0).sort((a, b) => a.pk - b.pk).map(col => col.name);
+        const first = updates[0];
+        const allColumns = Object.keys(first.data);
+        const whereColumns = Object.keys(first.originalKeys);
 
-        if (pkColumns.length === 0) {
-            throw new Error(`Não foi possível encontrar a chave primária da tabela "${table}".`);
-        }
-
-        const sample = rows[0];
-        const keys = Object.keys(sample).filter(k => !pkColumns.includes(k));
-        const setClause = keys.map(k => `${k} = ?`).join(', ');
-        const whereClause = pkColumns.map(k => `${k} = ?`).join(' AND ');
+        const setClause = allColumns.map(col => `${col} = ?`).join(', ');
+        const whereClause = whereColumns.map(col => `${col} = ?`).join(' AND ');
         const sql = `UPDATE ${table} SET ${setClause} WHERE ${whereClause}`;
 
         let totalUpdated = 0;
@@ -124,10 +117,9 @@ export class SQLiteDriver implements IDatabaseDriver {
         try {
             const stmt = await this.db.prepare(sql);
 
-            for (const row of rows) {
-                const setValues = keys.map(k => row[k]);
-                const whereValues = pkColumns.map(k => row[k]);
-                const result = await stmt.run([...setValues, ...whereValues]);
+            for (const { data, originalKeys } of updates) {
+                const values = [...allColumns.map(c => data[c]), ...whereColumns.map(c => originalKeys[c])];
+                const result = await stmt.run(values);
                 totalUpdated += result.changes ?? 0;
             }
 

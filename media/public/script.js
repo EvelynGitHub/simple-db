@@ -189,15 +189,6 @@ function saveRow(icon) {
     const isNewRow = tr.classList.contains('new-row');
     const isEditedRow = tr.classList.contains('edited');
     const data = getRowData(tr);
-
-    // const pkCell = tr.querySelector('[data-primary-key="true"]');
-    // if (!pkCell) {
-    //     console.error("Chave primária não encontrada na linha.");
-    //     return;
-    // }
-    // const primaryKey = pkCell.dataset.column;
-    // const primaryKeyValue = pkCell.dataset.value.trim();
-
     // Obtem todas as PKs originais salvas no tr
     const originalKeys = {};
     columns.forEach(col => {
@@ -360,25 +351,30 @@ function saveAll() {
             }
 
             const rowData = getRowData(tr);
+            const originalKeys = {} //JSON.parse(tr.dataset.originalKeys || '{}');
+
+            columns.forEach(col => {
+                if (col.primaryKey || col.foreignKey) {
+                    originalKeys[col.columnName] = tr.dataset[`original_${col.columnName}`];
+                }
+            });
 
             if (tr.classList.contains('new-row')) {
                 insert.push(rowData);
             } else {
-                update.push(rowData);
+                update.push({ data: rowData, originalKeys });
             }
 
             tr.classList.remove('edited', 'new-row', 'invalid');
         }
     });
 
-    const payload = { insert, update };
-
-
     vscode.postMessage({
         type: 'saveAll',
-        insert, update
+        insert,
+        update
     });
-    console.log('Salvar para API:', payload);
+    console.log('Salvar para API:', insert, update);
 }
 
 function tableInputHandler(e) {
