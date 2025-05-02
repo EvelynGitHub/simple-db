@@ -63,9 +63,10 @@ export class PostgresDriver implements IDatabaseDriver {
         ));
     }
 
-    async getAllRows(tableName: string): Promise<any[]> {
-        const result = await this.client.query(`SELECT * FROM "${tableName}"`);
-        return result.rows;
+    // async getAllRows(tableName: string): Promise<any[]> {
+    async getAllRows(table: string, limit?: number, offset?: number, searchText?: string, column?: string): Promise<{ rows: any[]; total: number }> {
+        const result = await this.client.query(`SELECT * FROM "${table}"`);
+        return { rows: result.rows, total: 0 };
     }
 
     async insertRow(tableName: string, data: any): Promise<void> {
@@ -101,5 +102,9 @@ export class PostgresDriver implements IDatabaseDriver {
 
     async deleteRow(tableName: string, primaryKeyValue: any): Promise<void> {
         await this.client.query(`DELETE FROM "${tableName}" WHERE id = $1`, [primaryKeyValue]);
+    }
+
+    async getRowsPage(table: string, limit: number, offset: number): Promise<{ rows: any[]; total: number }> {
+        return { rows: [], total: 0 }
     }
 }

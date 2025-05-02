@@ -1,19 +1,47 @@
 const vscode = acquireVsCodeApi();
 let columns = [];
+let currentPage = 0;
+let totalPages = 0;
 
 // Recebe dados iniciais da extensão
 window.addEventListener('message', event => {
     console.log("Mensagem recebida do VSCode:", event.data);
     const { type, payload } = event.data;
 
-    columns = event.data.payload.columns;
+    console.log("message Payload:", payload)
 
-    if (type === 'renderTable') {
-        renderTable(event.data.payload.columns, event.data.payload.data)
-        populateSearchColumnSelect(event.data.payload.columns);
-        tableName = payload.tableName;
-        dbName = payload.dbName;
-        currentData = payload.data;
+    if (type === 'initializeTable') {
+        columns = payload.columns;
+        currentPage = payload.page;
+        totalPages = payload.totalPages;
+        renderFullTable(columns, payload.data);
+        populateSearchColumnSelect(payload.columns);
+        updatePagination();
+
+        // renderTable(event.data.payload.columns, event.data.payload.data)
+        // tableName = payload.tableName;
+        // dbName = payload.dbName;
+        // currentData = payload.data;
+    }
+
+    if (type === "refreshTable") {
+        currentPage = payload.page;
+        totalPages = payload.totalPages;
+
+        updateRows(payload.data);
+        updatePagination();
+    }
+});
+
+document.getElementById('prevPage').addEventListener('click', () => {
+    if (currentPage > 1) {
+        vscode.postMessage({ type: 'changePage', page: currentPage - 1 });
+    }
+});
+
+document.getElementById('nextPage').addEventListener('click', () => {
+    if (currentPage < totalPages) {
+        vscode.postMessage({ type: 'changePage', page: currentPage + 1 });
     }
 });
 
@@ -50,11 +78,11 @@ function sendSearchMessage() {
     }
 
     if (valid) {
-        vscode.postMessage({ type: 'search', value: input.value, column: column.value });
+        vscode.postMessage({ type: 'search', value: input.value, column: column.value, page: currentPage });
     }
 
-    console.log('Valor da pesquisa:', value);
-    console.log('Coluna da pesquisa:', column);
+    // console.log('Valor da pesquisa:', input);
+    // console.log('Coluna da pesquisa:', column);
     // vscode.postMessage({ type: 'search', value, column });
 }
 
@@ -414,4 +442,30 @@ function populateSearchColumnSelect(cols) {
         opt.value = col.columnName;
         select.appendChild(opt);
     });
+}
+
+
+// Paginação
+function updatePagination() {
+    document.getElementById('pageIndicator').textContent = `${currentPage} / ${totalPages}`;
+    document.getElementById('prevPage').disabled = currentPage <= 1;
+    document.getElementById('nextPage').disabled = currentPage >= totalPages;
+}
+
+
+function renderFullTable(columns, rows) {
+    const table = createTable(columns, rows);
+    const container = document.getElementById('container-table');
+    container.innerHTML = '';
+    container.appendChild(table);
+}
+
+
+function updateRows(rows) {
+    const tbody = document.querySelector('#container-table table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    for (const row of rows) {
+        tbody.appendChild(createRow(row));
+    }
 }

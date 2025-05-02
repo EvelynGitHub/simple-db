@@ -60,9 +60,15 @@ export class MySQLDriver implements IDatabaseDriver {
         ));
     }
 
-    async getAllRows(tableName: string): Promise<any[]> {
-        const [rows] = await this.connection.query(`SELECT * FROM \`${tableName}\``);
-        return rows as any[];
+    // async getAllRows(tableName: string): Promise<any[]> {
+    //     const [rows] = await this.connection.query(`SELECT * FROM \`${tableName}\``);
+    //     return rows as any[];
+    // }
+
+    async getAllRows(table: string, limit?: number, offset?: number, searchText?: string, column?: string): Promise<{ rows: any[]; total: number }> {
+        // const [rows] = await this.connection.query(`SELECT * FROM \`${table}\``);
+        const rows: any[] = [];
+        return { rows, total: 0 };
     }
 
     async insertRow(tableName: string, data: any): Promise<void> {
@@ -79,5 +85,9 @@ export class MySQLDriver implements IDatabaseDriver {
 
     async deleteRow(tableName: string, primaryKeyValue: any): Promise<void> {
         await this.connection.query(`DELETE FROM \`${tableName}\` WHERE id = ?`, [primaryKeyValue]);
+    }
+
+    async getRowsPage(table: string, limit: number, offset: number): Promise<{ rows: any[]; total: number }> {
+        return { rows: [], total: 0 }
     }
 }

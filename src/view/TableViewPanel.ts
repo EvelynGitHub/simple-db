@@ -6,6 +6,20 @@ import * as fs from 'fs';
 import { TableItem } from '../tree/TableItem';
 import { DriverFactory } from '../database/DriverFactory';
 import { IDatabaseDriver } from '../database/drivers/IDatabaseDriver';
+import { ColumnItem } from '../tree/ColumnItem';
+
+interface MessagePayload {
+	data: any[]; // Ou o tipo correto dos seus dados
+	columns?: ColumnItem[]; // O ponto de interrogação torna 'columns' opcional
+	page: number;
+	totalPages: number;
+	pageSize: number;
+}
+
+interface MessageBase {
+	type: 'initializeTable' | 'refreshTable';
+	payload: MessagePayload;
+}
 
 export class TableViewPanel {
 
@@ -14,18 +28,24 @@ export class TableViewPanel {
 	private readonly _extensionUri: vscode.Uri;
 	private _disposables: vscode.Disposable[] = [];
 	private _table: TableItem;
+	private _pageSize = 5;
+	private _currentPage = 1;
+	private _totalPages = 1;
 
 	private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, table: TableItem) {
 		this._panel = panel;
 		this._extensionUri = extensionUri;
 		this._table = table;
+		this._pageSize = vscode.workspace.getConfiguration('simpleDb').get('pageSize') || 5;
+		this._currentPage = 1;
+		// this._loadPage();
 
 		// Quando o painel for fechado, chama dispose
 		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
 		// Atualiza o HTML do painel
 		this._panel.webview.html = this._getHtmlForWebview(this._panel.webview);
-		this._sendForHtmlWebview(); // Envia os dados para o HTML
+		this._sendForHtmlWebview(true); // Envia os dados para o HTML
 		this._setWebviewMessageListener(this._panel.webview); // Escuta as mensagens do HTML
 	}
 
@@ -54,7 +74,8 @@ export class TableViewPanel {
 			TableViewPanel.currentPanel._table = table;
 
 			// Atualiza os dados do HTML
-			TableViewPanel.currentPanel._sendForHtmlWebview();
+			TableViewPanel.currentPanel._currentPage = 1;
+			TableViewPanel.currentPanel._sendForHtmlWebview(true);
 			return;
 		}
 
@@ -127,16 +148,27 @@ export class TableViewPanel {
 							this._sendForHtmlWebview();
 							break;
 						case 'refresh':
-							this._sendForHtmlWebview();
+							this._sendForHtmlWebview(false, message.value, message.column);
 							vscode.window.showInformationMessage('Recarregar dados da tabela');
 							break;
 						case 'search':
-							this._sendForHtmlWebview(message.value, message.column);
+							if (message.page >= 1 && message.page <= this._totalPages) {
+								this._currentPage = message.page;
+								await this._sendForHtmlWebview(false);
+							}
+							this._sendForHtmlWebview(false, message.value, message.column);
 							vscode.window.showInformationMessage(`Buscar por: ${message.value} na coluna ${message.column}`);
 							break;
 						case 'saveAll':
 							this.saveDataAll(driver, message.insert, message.update);
 							this._sendForHtmlWebview();
+							break;
+						case 'changePage':
+							const newPage = message.page;
+							if (newPage >= 1 && newPage <= this._totalPages) {
+								this._currentPage = newPage;
+								await this._sendForHtmlWebview(false);
+							}
 							break;
 					}
 				} catch (error: any) {
@@ -160,20 +192,34 @@ export class TableViewPanel {
 		}
 	}
 
-	private async _sendForHtmlWebview(searchText?: string, column?: string) {
+	private async _sendForHtmlWebview(initialize = false, searchText?: string, column?: string) {
+		// const driver = await ConnectionManager.getActiveDriver();
 		const connectionManager = ConnectionManager.getInstance().getConnection(this._table.dbName);
 		const driver = await DriverFactory.create(connectionManager, this._table.dbName);
-		const rows = await driver.getAllRows(this._table.tableName, searchText, column);
 
-		const columns = this._table.columns;
+		const offset = (this._currentPage - 1) * this._pageSize;
+		// const { rows, total } = await driver.getRowsPage(this._table.tableName, this._pageSize, offset);
+		const { rows, total } = await driver.getAllRows(this._table.tableName, this._pageSize, offset, searchText, column);
 
-		this._panel.webview.postMessage({
-			type: 'renderTable',
+		console.log("Linhas e total: ", rows, total)
+
+		this._totalPages = Math.ceil(total / this._pageSize) || 1;
+
+		const messageBase: MessageBase = {
+			type: initialize ? 'initializeTable' : 'refreshTable',
 			payload: {
 				data: rows,
-				columns
+				page: this._currentPage,
+				totalPages: this._totalPages,
+				pageSize: this._pageSize,
 			},
-		})
+		};
+
+		if (initialize) {
+			messageBase.payload.columns = this._table.columns;
+		}
+
+		this._panel.webview.postMessage(messageBase);
 	}
 
 	public static closeIfConnectedTo(dbName: string) {
