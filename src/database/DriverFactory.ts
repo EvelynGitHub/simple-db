@@ -1,0 +1,85 @@
+// src/database/DriverFactory.ts
+import * as fs from 'fs'; // <-- importa fs
+import { ConnectionConfig } from './ConnectionManager';
+import { IDatabaseDriver } from './drivers/IDatabaseDriver';
+
+/**
+ * Fábrica de criação de Drivers de banco de dados.
+ * Agora com cache para reaproveitamento de conexões.
+ */
+export class DriverFactory {
+    // Cache de drivers já conectados
+    private static drivers: { [dbName: string]: IDatabaseDriver } = {};
+
+    /**
+     * Cria (ou reaproveita) um driver de banco para uma conexão.
+     * @param config Dados da conexão
+     * @param dbName Nome do banco
+     */
+    static async create(config: ConnectionConfig, dbName: string): Promise<IDatabaseDriver> {
+        // Se já existe driver no cache, usa ele
+        if (DriverFactory.drivers[dbName]) {
+            return DriverFactory.drivers[dbName];
+        }
+
+        let driver: IDatabaseDriver;
+
+        switch (config.type) {
+            case 'sqlite': {
+                if (!config.path) {
+                    throw new Error('Caminho do banco de dados SQLite não informado.');
+                }
+
+                if (!fs.existsSync(config.path)) {
+                    throw new Error(`Arquivo do banco de dados não encontrado: ${config.path}`);
+                }
+                const { SQLiteDriver } = await import('./drivers/SQLiteDriver');
+                driver = new SQLiteDriver(config.path!);
+                break;
+            }
+            case 'mysql': {
+                try {
+                    const { MySQLDriver } = await import('./drivers/MySQLDriver');
+                    driver = new MySQLDriver(config.host!, config.user!, config.password!, config.name || dbName);
+                    break;
+                } catch (error) {
+                    throw new Error('Pacote mysql2 não encontrado. Por favor, instale com: npm install mysql2');
+                }
+            }
+            case 'postgres': {
+                try {
+                    const { PostgresDriver } = await import('./drivers/PostgresDriver');
+                    driver = new PostgresDriver(config.host!, config.user!, config.password!, config.name || dbName);
+                    break;
+                } catch (error) {
+                    throw new Error('Pacote pg não encontrado. Por favor, instale com: npm install pg');
+                }
+            }
+            default:
+                throw new Error(`Tipo de banco de dados não suportado: ${config.type}`);
+        }
+
+        await driver.connect(); // Conecta o driver
+        this.drivers[dbName] = driver; // Armazena o driver para reuso
+
+        return driver;
+    }
+
+    /**
+     * Remove um driver do cache (ex: ao remover uma conexão).
+     * @param dbName Nome do banco
+     */
+    static async disconnect(dbName: string) {
+        const driver = DriverFactory.drivers[dbName];
+        if (driver) {
+            try {
+                if ((driver as any).close) {
+                    await (driver as any).close(); // Opcional: implementar método close() nos drivers
+                }
+            } catch (error) {
+                console.error(`Erro ao fechar driver ${dbName}:`, error);
+            }
+            delete DriverFactory.drivers[dbName];
+        }
+    }
+}

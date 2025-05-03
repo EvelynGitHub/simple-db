@@ -32,8 +32,8 @@
     },
     "commands": [
       {
-        "command": "simple-db.connectDatabase",
-        "title": "Conectar ao banco de dados",
+        "command": "simple-db.addDatabase",
+        "title": "Nova Conexão",
         "icon": "$(add)"
       },
       {
@@ -47,8 +47,9 @@
         "icon": "$(settings)"
       },
       {
-        "command": "simpleDbExplorer.executeQuery",
-        "title": "Simple DB: Execute SQL Query"
+        "command": "simple-db.executeQuery",
+        "title": "Simple DB: Execute SQL Query",
+        "icon": "$(file-code)"
       },
       {
         "command": "simple-db.openTable",
@@ -69,12 +70,16 @@
         "command": "simple-db.deleteDatabase",
         "title": "Atualiza conexão com banco de dados",
         "icon": "$(trash)"
+      },
+      {
+        "command": "simple-db.saveConnection",
+        "title": "Salvar Conexão"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "simple-db.connectDatabase",
+          "command": "simple-db.addDatabase",
           "when": "view == simpleDbExplorer",
           "group": "navigation@1"
         },
@@ -119,8 +124,34 @@
           "command": "simple-db.deleteDatabase",
           "when": "viewItem == databaseItem",
           "group": "inline"
+        },
+        {
+          "command": "simple-db.executeQuery",
+          "when": "viewItem == databaseItem",
+          "group": "inline"
         }
       ]
+    },
+    "configuration": {
+      "title": "Simple DB",
+      "properties": {
+        "simpleDb.pageSize": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "description": "Número de registros exibidos por página na tabela."
+        },
+        "simpleDb.autoSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se verdadeiro, alterações são salvas automaticamente ao editar."
+        },
+        "simpleDb.autoComplete": {
+          "type": "boolean",
+          "default": true,
+          "description": "Habilita sugestões automáticas ao editar valores."
+        }
+      }
     }
   },
   "activationEvents": [
@@ -137,6 +168,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
+    "@types/pg": "^8.11.14",
     "@types/sqlite3": "^3.1.11",
     "@types/vscode": "^1.99.0",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
@@ -147,6 +179,8 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
+    "mysql2": "^3.14.1",
+    "pg": "^8.15.6",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
   }

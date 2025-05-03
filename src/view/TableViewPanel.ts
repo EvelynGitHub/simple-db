@@ -4,6 +4,24 @@ import { ConnectionManager } from '../database/ConnectionManager';
 import * as path from 'path';
 import * as fs from 'fs';
 import { TableItem } from '../tree/TableItem';
+import { DriverFactory } from '../database/DriverFactory';
+import { IDatabaseDriver } from '../database/drivers/IDatabaseDriver';
+import { ColumnItem } from '../tree/ColumnItem';
+import { ExtensionConfig } from '../utils/Config';
+
+interface MessagePayload {
+	data: any[]; // Ou o tipo correto dos seus dados
+	columns?: ColumnItem[]; // O ponto de interrogação torna 'columns' opcional
+	page: number;
+	totalPages: number;
+	pageSize: number;
+	autoSave: boolean;
+}
+
+interface MessageBase {
+	type: 'initializeTable' | 'refreshTable';
+	payload: MessagePayload;
+}
 
 export class TableViewPanel {
 
@@ -12,18 +30,22 @@ export class TableViewPanel {
 	private readonly _extensionUri: vscode.Uri;
 	private _disposables: vscode.Disposable[] = [];
 	private _table: TableItem;
+	private _pageSize = ExtensionConfig.get().pageSize;
+	private _currentPage = 1;
+	private _totalPages = 1;
 
 	private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, table: TableItem) {
 		this._panel = panel;
 		this._extensionUri = extensionUri;
 		this._table = table;
+		this._currentPage = 1;
 
 		// Quando o painel for fechado, chama dispose
 		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
 		// Atualiza o HTML do painel
 		this._panel.webview.html = this._getHtmlForWebview(this._panel.webview);
-		this._sendForHtmlWebview(); // Envia os dados para o HTML
+		this._sendForHtmlWebview(true); // Envia os dados para o HTML
 		this._setWebviewMessageListener(this._panel.webview); // Escuta as mensagens do HTML
 	}
 
@@ -52,13 +74,14 @@ export class TableViewPanel {
 			TableViewPanel.currentPanel._table = table;
 
 			// Atualiza os dados do HTML
-			TableViewPanel.currentPanel._sendForHtmlWebview();
+			TableViewPanel.currentPanel._currentPage = 1;
+			TableViewPanel.currentPanel._sendForHtmlWebview(true);
 			return;
 		}
 
 		const panel = vscode.window.createWebviewPanel(
 			'tableView',
-			'Visualizar Tabela - ' + table.tableName,
+			'Visualizar Tabela - ' + table.tableName + ' - ' + table.dbName,
 			vscode.ViewColumn.One,
 			{
 				enableScripts: true,
@@ -89,41 +112,63 @@ export class TableViewPanel {
 		return htmlContent;
 	}
 
-	private _setWebviewMessageListener(webview: vscode.Webview) {
-
-		const connectionManager = ConnectionManager.getInstance();
-
+	private async _setWebviewMessageListener(webview: vscode.Webview) {
 		webview.onDidReceiveMessage(
 			async (message) => {
 				try {
-					console.log('Mensagem recebida do webview HTML: ', message);
+					const connectionManager = ConnectionManager.getInstance();
+					const connection = connectionManager.getConnection(this._table.dbName);
+
+					if (!connection) {
+						vscode.window.showWarningMessage(`Conexão perdida com o banco ${this._table.dbName}. Fechando painel.`);
+						this._panel.dispose(); // Fecha o Webview para não deixar a tela travada
+						return;
+					}
+
+					// Usa o driver já cacheado corretamente
+					const driver = await DriverFactory.create(connection, this._table.dbName);
+					// console.log("\t(TableViewPanel.ts -> webview.onDidReceiveMessage): ", message.data, this._table);
+					// console.log('Mensagem recebida do webview HTML: ', message);
 
 					switch (message.type) {
 						case 'insert':
-							await connectionManager.insertRow(this._table.dbName, this._table.tableName, message.data);
+							await driver.insertRow(this._table.tableName, message.data);
 							vscode.window.showInformationMessage('Inserido novo registro');
 							this._sendForHtmlWebview();
 							break;
 						case 'update':
-							await connectionManager.updateRow(this._table.dbName, this._table.tableName, message.primaryKey, message.primaryKeyValue, message.data);
+							// await driver.updateRow(this._table.tableName, message.primaryKey, message.primaryKeyValue, message.data);
+							await driver.updateRow(this._table.tableName, message.data, message.originalKeys);
 							vscode.window.showInformationMessage('Atualizar registros selecionados');
 							this._sendForHtmlWebview();
 							break;
 						case 'delete':
-							console.log('Deletar registro', message.primaryKey, message.primaryKeyValue);
-
-							await connectionManager.deleteRow(this._table.dbName, this._table.tableName, message.primaryKey, message.primaryKeyValue);
-							console.log("Depois do await");
+							await driver.deleteRow(this._table.tableName, message.primaryKey, message.primaryKeyValue);
 							vscode.window.showInformationMessage('Deletar registros selecionados');
 							this._sendForHtmlWebview();
 							break;
 						case 'refresh':
-							this._sendForHtmlWebview();
+							this._sendForHtmlWebview(false, message.value, message.column);
 							vscode.window.showInformationMessage('Recarregar dados da tabela');
 							break;
 						case 'search':
-							this._sendForHtmlWebview(message.value, message.column);
+							if (message.page >= 1 && message.page <= this._totalPages) {
+								this._currentPage = message.page;
+								await this._sendForHtmlWebview(false);
+							}
+							this._sendForHtmlWebview(false, message.value, message.column);
 							vscode.window.showInformationMessage(`Buscar por: ${message.value} na coluna ${message.column}`);
+							break;
+						case 'saveAll':
+							this.saveDataAll(driver, message.insert, message.update);
+							this._sendForHtmlWebview();
+							break;
+						case 'changePage':
+							const newPage = message.page;
+							if (newPage >= 1 && newPage <= this._totalPages) {
+								this._currentPage = newPage;
+								await this._sendForHtmlWebview(false);
+							}
 							break;
 					}
 				} catch (error: any) {
@@ -136,10 +181,8 @@ export class TableViewPanel {
 	}
 
 	public dispose() {
-		console.log('Destruindo painel de tabela');
-
 		TableViewPanel.currentPanel = undefined;
-		// this._panel.dispose();
+		this._panel.dispose();
 
 		while (this._disposables.length) {
 			const disposable = this._disposables.pop();
@@ -149,230 +192,62 @@ export class TableViewPanel {
 		}
 	}
 
-	private async _sendForHtmlWebview(searchText?: string, column?: string) {
-		const connectionManager = ConnectionManager.getInstance();
+	private async _sendForHtmlWebview(initialize = false, searchText?: string, column?: string) {
+		// const driver = await ConnectionManager.getActiveDriver();
+		const connectionManager = ConnectionManager.getInstance().getConnection(this._table.dbName);
+		const driver = await DriverFactory.create(connectionManager, this._table.dbName);
 
-		const rows = await connectionManager.getAllRows(this._table.dbName, this._table.tableName, searchText, column);
-		// const columns = Object.keys(rows[0]);
-		const columns = this._table.columns;
+		const offset = (this._currentPage - 1) * this._pageSize;
+		// const { rows, total } = await driver.getRowsPage(this._table.tableName, this._pageSize, offset);
+		const { rows, total } = await driver.getAllRows(this._table.tableName, this._pageSize, offset, searchText, column);
 
-		console.log('Enviando dados para o HTML COLUNAS', this._table);
+		console.log("Linhas e total: ", rows, total)
 
-		this._panel.webview.postMessage({
-			type: 'renderTable',
+		this._totalPages = Math.ceil(total / this._pageSize) || 1;
+
+		const messageBase: MessageBase = {
+			type: initialize ? 'initializeTable' : 'refreshTable',
 			payload: {
-				// dbName: this._dbName,
-				// tableName: this._tableName,
 				data: rows,
-				columns
+				page: this._currentPage,
+				totalPages: this._totalPages,
+				pageSize: this._pageSize,
+				autoSave: ExtensionConfig.get().autoSave
 			},
-			columns,
-			rows
-		})
+		};
+
+		if (initialize) {
+			messageBase.payload.columns = this._table.columns;
+		}
+
+		this._panel.webview.postMessage(messageBase);
 	}
 
+	public static closeIfConnectedTo(dbName: string) {
+		if (TableViewPanel.currentPanel && TableViewPanel.currentPanel._table.dbName === dbName) {
+			TableViewPanel.currentPanel.dispose();
+		}
+	}
 
-	/*
-		static showTable(dbName: string, tableName: string) {
-			const panel = vscode.window.createWebviewPanel(
-				'tableView',
-				`${dbName} - ${tableName}`,
-				vscode.ViewColumn.One,
-				{
-					enableScripts: true,
-				}
-			);
-	
-			const connectionManager = ConnectionManager.getInstance();
-	
-			async function loadData(searchText?: string) {
-				const rows = await connectionManager.getAllRows(dbName, tableName, searchText);
-				panel.webview.html = TableViewPanel.getHtmlForTable(rows, dbName, tableName);
-			}
-	
-			async function updateData(primaryKey: string, primaryKeyValue: any, data: any) {
-				try {
-					await connectionManager.updateRow(dbName, tableName, primaryKey, primaryKeyValue, data);
-					vscode.window.showInformationMessage('Registro atualizado com sucesso!');
-					await loadData();
-				} catch (error: any) {
-					vscode.window.showErrorMessage('Erro ao atualizar: ' + error.message);
+	public async saveDataAll(driver: IDatabaseDriver, inserts: [], updates: []) {
+		try {
+
+			await driver.insertRow(this._table.tableName, inserts);
+
+			if (updates.length > 50) {
+				const confirm = await vscode.window.showWarningMessage(`Tem certeza que deseja atualizar ${updates.length} linhas?`, 'Sim', 'Cancelar');
+
+				if (confirm !== 'Sim') {
+					return;
 				}
 			}
-	
-			async function insertData(primaryKey: string, primaryKeyValue: any, data: any) {
-				try {
-					await connectionManager.insertRow(dbName, tableName, primaryKey, primaryKeyValue, data);
-					vscode.window.showInformationMessage('Registro inserido com sucesso');
-					await loadData();
-				} catch (error: any) {
-					vscode.window.showErrorMessage('Erro ao inserir: ' + error.message);
-				}
-			}
-	
-			async function deleteData(primaryKey: string, primaryKeyValue: any) {
-				try {
-					await connectionManager.deleteRow(dbName, tableName, primaryKey, primaryKeyValue);
-					vscode.window.showInformationMessage('Registro deletado com sucesso');
-					await loadData();
-				} catch (error: any) {
-					vscode.window.showErrorMessage('Erro ao deletar: ' + error.message);
-				}
-			}
-	
-			loadData();
-	
-			panel.webview.onDidReceiveMessage(async message => {
-				if (message.command === 'searchTable') {
-					const searchText = message.searchText;
-					await loadData(searchText);
-				}
-	
-				if (message.command === 'refreshTable') {
-					await loadData();
-				}
-	
-				if (message.command === 'updateRow') {
-					await updateData(message.primaryKey, message.primaryKeyValue, message.data);
-				}
-	
-				if (message.command === 'insertRow') {
-					await insertData(message.primaryKey, message.primaryKeyValue, message.data);
-				}
-	
-				if (message.command === 'deleteRow') {
-					await deleteData(message.primaryKey, message.primaryKeyValue);
-				}
-			});
-	
+
+			await driver.updateRows(this._table.tableName, updates);
+
+			vscode.window.showInformationMessage(`Dados salvos com sucesso.`);
+		} catch (error) {
+			console.error(error);
+			vscode.window.showErrorMessage("Um erro inesperado aconteceu.");
 		}
-	
-		private static getHtmlForTable2(rows: any[], dbName: string, tableName: string): string {
-			if (rows.length === 0) {
-				return `<html><body><h3>Nenhum dado encontrado em ${tableName}</h3></body></html>`;
-			}
-	
-			const headers = Object.keys(rows[0]);
-			const headerHtml = headers.map(header => `<th>${header}</th>`).join('');
-	
-			const rowsHtml = rows.map(row => {
-				const cells = headers.map(header => `<td contenteditable="true" data-col="${header}">${row[header] ?? ''}</td>`).join('');
-				return `<tr>
-					${cells}
-					<td>
-					  <button onclick="saveRow(this)">Salvar</button>
-					  <button onclick="deleteRow(this)">Excluir</button>
-					</td>
-				  </tr>`;
-			}).join('');
-	
-			return `
-		  <html>
-		  <head>
-			<meta charset="UTF-8">
-			<style>
-			  table { border-collapse: collapse; width: 100%; }
-			  th, td { border: 1px solid #ddd; padding: 8px; }
-			  th { background-color: #bbb; color: black; }
-			  button { margin: 2px; }
-			</style>
-		  </head>
-		  <body>
-			<h2>${tableName}</h2>
-			<div>
-			  <input id="searchInput" type="text" placeholder="Buscar..." />
-			  <button onclick="search()">Buscar</button>
-			  <button onclick="refresh()">🔄 Atualizar</button>
-			  <button onclick="insertRow()">Inserir Novo</button>
-			</div>
-			<table>
-			  <thead><tr>${headerHtml}<th>Ações</th> </tr></thead>
-			  <tbody>${rowsHtml}</tbody>
-			</table>
-	
-			<script>
-			  const vscode = acquireVsCodeApi();
-			  const columns = ${JSON.stringify(headers)};
-	
-			  function search() {
-				const searchText = document.getElementById('searchInput').value;
-				vscode.postMessage({ command: 'searchTable', searchText });
-			  }
-		    
-			  function refresh() {
-				vscode.postMessage({ command: 'refreshTable' });
-			  }
-	
-			  function getRowData(tr) {
-				const data = {};
-				tr.querySelectorAll('td[data-col]').forEach(td => {
-				  data[td.dataset.col] = td.innerText;
-				});
-				return data;
-			  }
-	
-			  function saveRow(button) {
-				const tr = button.closest('tr');
-				const tds = tr.querySelectorAll('td[data-col]');
-				const primaryKey = tds[0]?.dataset.col;
-				const primaryKeyValue = tds[0]?.innerText;
-				const data = getRowData(tr);
-	
-				vscode.postMessage({
-				  command: 'updateRow',
-				  primaryKey,
-				  primaryKeyValue,
-				  data
-				});
-			  }
-	
-			  function insertRow() {
-				const tableBody = document.querySelector('tbody');
-				const tr = document.createElement('tr');
-	
-				columns.forEach(col => {
-				  const td = document.createElement('td');
-				  td.contentEditable = "true";
-				  td.setAttribute('data-col', col);
-				  tr.appendChild(td);
-				});
-	
-				const actionTd = document.createElement('td');
-				const saveBtn = document.createElement('button');
-				saveBtn.innerText = "Salvar";
-				saveBtn.onclick = () => {
-				  const data = getRowData(tr);
-				  vscode.postMessage({
-					command: 'insertRow',
-					data
-				  });
-				};
-				actionTd.appendChild(saveBtn);
-	
-				tr.appendChild(actionTd);
-				tableBody.appendChild(tr);
-			  }
-	
-			  function deleteRow(button) {
-				const tr = button.closest('tr');
-				const tds = tr.querySelectorAll('td[data-col]');
-				const primaryKey = tds[0]?.dataset.col;
-				const primaryKeyValue = tds[0]?.innerText;
-	
-				vscode.postMessage({
-				  command: 'deleteRow',
-				  primaryKey,
-				  primaryKeyValue
-				});
-				tr.remove();
-			  }
-			</script>
-		  </body>
-		  </html>
-		  `;
-	
-		}
-	
-		*/
+	}
 }
-// 

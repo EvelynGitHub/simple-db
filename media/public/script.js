@@ -1,20 +1,48 @@
 const vscode = acquireVsCodeApi();
 let columns = [];
+let currentPage = 0;
+let totalPages = 0;
 
 // Recebe dados iniciais da extensão
 window.addEventListener('message', event => {
     console.log("Mensagem recebida do VSCode:", event.data);
     const { type, payload } = event.data;
 
-    columns = event.data.payload.columns;
-    populateSearchColumnSelect(event.data.payload.columns);
-    renderTable(event.data.payload.columns, event.data.payload.data)
-    if (type === 'renderTable') {
-        tableName = payload.tableName;
-        dbName = payload.dbName;
-        currentData = payload.data;
+    console.log("message Payload:", payload)
+
+    if (type === 'initializeTable') {
         columns = payload.columns;
-        renderTable();
+        currentPage = payload.page;
+        totalPages = payload.totalPages;
+        renderFullTable(columns, payload.data);
+        populateSearchColumnSelect(payload.columns);
+        updatePagination();
+        $('autoSave').checked = payload.autoSave
+
+        // renderTable(event.data.payload.columns, event.data.payload.data)
+        // tableName = payload.tableName;
+        // dbName = payload.dbName;
+        // currentData = payload.data;
+    }
+
+    if (type === "refreshTable") {
+        currentPage = payload.page;
+        totalPages = payload.totalPages;
+
+        updateRows(payload.data);
+        updatePagination();
+    }
+});
+
+document.getElementById('prevPage').addEventListener('click', () => {
+    if (currentPage > 1) {
+        vscode.postMessage({ type: 'changePage', page: currentPage - 1 });
+    }
+});
+
+document.getElementById('nextPage').addEventListener('click', () => {
+    if (currentPage < totalPages) {
+        vscode.postMessage({ type: 'changePage', page: currentPage + 1 });
     }
 });
 
@@ -51,11 +79,11 @@ function sendSearchMessage() {
     }
 
     if (valid) {
-        vscode.postMessage({ type: 'search', value: input.value, column: column.value });
+        vscode.postMessage({ type: 'search', value: input.value, column: column.value, page: currentPage });
     }
 
-    console.log('Valor da pesquisa:', value);
-    console.log('Coluna da pesquisa:', column);
+    // console.log('Valor da pesquisa:', input);
+    // console.log('Coluna da pesquisa:', column);
     // vscode.postMessage({ type: 'search', value, column });
 }
 
@@ -114,7 +142,15 @@ function createRow(data = {}, isNew = false, index = null) {
     if (index !== null) tr.dataset.index = index;
 
     tr.appendChild(createActionsCell(tr));
-    columns.forEach(col => tr.appendChild(createDataCell(col, data[col.columnName] ?? null, tr)));
+
+    columns.forEach(col => {
+        // Armazena valor original da PK/FK diretamente na tr
+        if (col.primaryKey || col.foreignKey) {
+            tr.dataset[`original_${col.columnName}`] = data[col.columnName];
+        }
+
+        tr.appendChild(createDataCell(col, data[col.columnName] ?? null, tr));
+    });
 
     return tr;
 }
@@ -158,7 +194,7 @@ function createDataCell(col, value, tr) {
         td.contentEditable = !col.isAutoIncrement;
         td.innerText = value ?? '';
         td.onkeydown = (e) => {
-            if (e.key === 'Enter' && $('auto-save-toggle')?.checked) {
+            if (e.key === 'Enter' && $('autoSave')?.checked) {
                 e.preventDefault();
                 saveRow(tr.querySelector('.action-icon'));
             }
@@ -173,34 +209,40 @@ function saveRow(icon) {
     const tr = icon.closest('tr');
     const footer = $('table-footer');
     footer.innerHTML = '';
+
     if (!validateRow(tr)) {
         footer.innerHTML = `<tr><th colspan="${tr.children.length}">Há campos obrigatórios não preenchidos ou com formato inválido!</th></tr>`;
         return;
     }
 
-    const pkCell = tr.querySelector('[data-primary-key="true"]');
-    if (!pkCell) {
-        console.error("Chave primária não encontrada na linha.");
-        return;
-    }
-
-    const primaryKey = pkCell.dataset.column;
-    const primaryKeyValue = pkCell.dataset.value.trim();
     const isNewRow = tr.classList.contains('new-row');
     const isEditedRow = tr.classList.contains('edited');
     const data = getRowData(tr);
+    // Obtem todas as PKs originais salvas no tr
+    const originalKeys = {};
+    columns.forEach(col => {
+        if (col.primaryKey || col.foreignKey) {
+            originalKeys[col.columnName] = tr.dataset[`original_${col.columnName}`];
+        }
+    });
 
     if (isNewRow) {
         vscode.postMessage({
             type: 'insert',
             data,
         });
-    } else if (isEditedRow && primaryKeyValue) {
+    } else if (isEditedRow && originalKeys) {
         vscode.postMessage({
             type: 'update',
-            primaryKey,
-            primaryKeyValue,
+            originalKeys,
             data,
+        });
+
+        // Atualiza os dados originais após o update
+        columns.forEach(col => {
+            if (col.primaryKey || col.foreignKey) {
+                tr.dataset[`original_${col.columnName}`] = data[col.columnName];
+            }
         });
     }
 
@@ -338,20 +380,30 @@ function saveAll() {
             }
 
             const rowData = getRowData(tr);
+            const originalKeys = {} //JSON.parse(tr.dataset.originalKeys || '{}');
+
+            columns.forEach(col => {
+                if (col.primaryKey || col.foreignKey) {
+                    originalKeys[col.columnName] = tr.dataset[`original_${col.columnName}`];
+                }
+            });
 
             if (tr.classList.contains('new-row')) {
                 insert.push(rowData);
             } else {
-                update.push(rowData);
+                update.push({ data: rowData, originalKeys });
             }
 
             tr.classList.remove('edited', 'new-row', 'invalid');
         }
     });
 
-    const payload = { insert, update };
-
-    console.log('Salvar para API:', payload);
+    vscode.postMessage({
+        type: 'saveAll',
+        insert,
+        update
+    });
+    console.log('Salvar para API:', insert, update);
 }
 
 function tableInputHandler(e) {
@@ -391,4 +443,30 @@ function populateSearchColumnSelect(cols) {
         opt.value = col.columnName;
         select.appendChild(opt);
     });
+}
+
+
+// Paginação
+function updatePagination() {
+    document.getElementById('pageIndicator').textContent = `${currentPage} / ${totalPages}`;
+    document.getElementById('prevPage').disabled = currentPage <= 1;
+    document.getElementById('nextPage').disabled = currentPage >= totalPages;
+}
+
+
+function renderFullTable(columns, rows) {
+    const table = createTable(columns, rows);
+    const container = document.getElementById('container-table');
+    container.innerHTML = '';
+    container.appendChild(table);
+}
+
+
+function updateRows(rows) {
+    const tbody = document.querySelector('#container-table table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    for (const row of rows) {
+        tbody.appendChild(createRow(row));
+    }
 }
