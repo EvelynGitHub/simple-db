@@ -1,4 +1,4 @@
-# ![Simple DB Logo](https://github.com/EvelynGitHub/simple-db/blob/main/media/logo.png)  
+# ![Simple DB Logo](https://raw.githubusercontent.com/EvelynGitHub/simple-db/main/media/logo.png)  
 # Simple DB – VSCode Extension
 
 Extensão para Visual Studio Code para explorar e manipular bancos de dados locais de forma simples e prática.
@@ -6,15 +6,15 @@ Extensão para Visual Studio Code para explorar e manipular bancos de dados loca
 > Inspirada em extensões como [Database Client](https://marketplace.visualstudio.com/items?itemName=cweijan.vscode-database-client2) e ferramentas como DBeaver, com foco em leveza, simplicidade e funcionalidades essenciais.
 
 ---
-# ![Conexão](https://github.com/EvelynGitHub/simple-db/blob/main/media/conexao.gif)
+# ![Conexão](https://raw.githubusercontent.com/EvelynGitHub/simple-db/main/media/conexao.gif)
 
 
-# ![Exibição tabela](https://github.com/EvelynGitHub/simple-db/blob/main/media/exibi_tabela.gif)
+# ![Exibição tabela](https://raw.githubusercontent.com/EvelynGitHub/simple-db/main/media/exibi_tabela.gif)
 
 
-# ![Edição tabela](https://github.com/EvelynGitHub/simple-db/blob/main/media/edita_tabela.gif)
+# ![Edição tabela](https://raw.githubusercontent.com/EvelynGitHub/simple-db/main/media/edita_tabela.gif)
 
-# ![Execução de Query](https://github.com/EvelynGitHub/simple-db/blob/main/media/query_run.gif)
+# ![Execução de Query](https://raw.githubusercontent.com/EvelynGitHub/simple-db/main/media/query_run.gif)
 ---
 
 ## 📦 Instalação
