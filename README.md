@@ -60,26 +60,54 @@ A extensão será publicada futuramente no Marketplace do VSCode.
 ## 📂 Estrutura do Projeto
 ```
 simple-db/ 
-├── src/ 
-│ ├── extension.ts # Entry point da extensão 
-│ ├── tree/ # Itens da árvore do explorer 
-│ │ ├── DatabaseTreeProvider.ts 
-│ │ ├── DatabaseItem.ts 
-│ │ ├── TableItem.ts 
-│ │ └── ColumnItem.ts 
-│ ├── views/ 
-│ │ └── TableViewPanel.ts # Painel que exibe os dados da tabela 
-│ ├── database/ 
-│ │ ├── ConnectionManager.ts # Gerencia conexões com bancos 
-│ │ ├── QueryRunner.ts # Executa comandos SQL 
-│ ├── commands/ 
-│ │ ├── RegisterCommands.ts # Registro e lógica dos comandos 
-│ └── utils/ 
-│ └── Config.ts # Utilitários e helpers 
+├── src/
+|   ├── commands/            # Todos os comandos registrados
+|   │   ├── DatabaseCommands.ts
+|   │   ├── TableCommands.ts
+|   │   ├── RecordCommands.ts
+|   │   └── ConnectionCommands.ts
+|   │
+|   ├── database/            # Lógica de conexão e drivers
+|   │   ├── ConnectionManager.ts
+|   │   ├── DriverFactory.ts
+|   │   ├── drivers/
+|   │   │   ├── DatabaseDriver.ts
+|   │   │   ├── SQLiteDriver.ts
+|   │   │   ├── MySQLDriver.ts
+|   │   │   └── PostgresDriver.ts
+|   │
+|   ├── tree/                # Itens exibidos na árvore
+|   │   ├── DatabaseTreeProvider.ts
+|   │   ├── DatabaseItem.ts
+|   │   ├── TableItem.ts
+|   │   └── ColumnItem.ts
+|   │
+|   ├── views/               # Webviews (telas de interação)(Apenas exemplos)
+|   │   ├── connection/       # Tudo relacionado a Conexões
+|   │   │   ├── ConnectionFormPanel.ts
+|   │   │   └── connectionForm.html
+|   │   │
+|   │   ├── database/         # Telas de criação de Banco de Dados
+|   │   │   ├── CreateDatabasePanel.ts
+|   │   │   └── createDatabase.html
+|   │   │
+|   │   ├── table/            # Telas de criação de Tabela
+|   │   │   ├── CreateTablePanel.ts
+|   │   │   └── createTable.html
+|   │   │
+|   │   ├── record/           # Telas de CRUD de registros
+|   │   │   ├── RecordTablePanel.ts
+|   │   │   └── recordTable.html
+|   │
+|   ├── utils/               # Funções utilitárias
+|   │   ├── Config.ts
+|   │   └── Helpers.ts
+|   ├── extension.ts         # Ponto principal da extensão
 ├── media/ 
-│ └── logo.svg # Ícone/Logo da extensão 
-├── package.json 
-├── tsconfig.json 
+│   └── logo.svg # Ícone/Logo da extensão 
+├── types.ts             # Definições globais de tipos
+├── tsconfig.json
+├── package.json
 ├── README.md
 ```
 
@@ -100,9 +128,8 @@ simple-db/
 
 - [x] Suporte a SQLite
 - [ ] Suporte a PostgreSQL e MySQL
-- [ ] Exportar dados como CSV/JSON
-- [ ] Histórico de queries
 - [ ] Autocompletar SQL
+- [ ] Auto save ao pressionar Enter
 - [ ] Editor SQL completo
 
 ---

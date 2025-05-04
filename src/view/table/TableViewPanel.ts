@@ -1,13 +1,13 @@
 // src/views/TableViewPanel.ts
 import * as vscode from 'vscode';
-import { ConnectionManager } from '../database/ConnectionManager';
+import { ConnectionManager } from '../../database/ConnectionManager';
 import * as path from 'path';
 import * as fs from 'fs';
-import { TableItem } from '../tree/TableItem';
-import { DriverFactory } from '../database/DriverFactory';
-import { IDatabaseDriver } from '../database/drivers/IDatabaseDriver';
-import { ColumnItem } from '../tree/ColumnItem';
-import { ExtensionConfig } from '../utils/Config';
+import { TableItem } from '../../tree/TableItem';
+import { DriverFactory } from '../../database/DriverFactory';
+import { IDatabaseDriver } from '../../database/drivers/IDatabaseDriver';
+import { ColumnItem } from '../../tree/ColumnItem';
+import { ExtensionConfig } from '../../utils/Config';
 
 interface MessagePayload {
 	data: any[]; // Ou o tipo correto dos seus dados
@@ -56,7 +56,7 @@ export class TableViewPanel {
 			vscode.ViewColumn.One,
 			{
 				enableScripts: true,
-				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media/public')],
+				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'src/view/table')],
 				retainContextWhenHidden: true, // <-- Mantém o estado ao esconder
 			}
 		);
@@ -85,7 +85,7 @@ export class TableViewPanel {
 			vscode.ViewColumn.One,
 			{
 				enableScripts: true,
-				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media/public')],
+				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'src/view/table')],
 				retainContextWhenHidden: true, // <-- Mantém o estado ao esconder
 			}
 		);
@@ -96,9 +96,9 @@ export class TableViewPanel {
 
 
 	private _getHtmlForWebview(webview: vscode.Webview): string {
-		const mediaPath = vscode.Uri.joinPath(this._extensionUri, 'media/public');
+		const mediaPath = vscode.Uri.joinPath(this._extensionUri, 'src/view/table');
 
-		const htmlPath = path.join(this._extensionUri.fsPath, 'media/public', 'index.html');
+		const htmlPath = path.join(this._extensionUri.fsPath, 'src/view/table', 'index.html');
 		let htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
 		const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaPath, 'style.css'));
@@ -193,15 +193,11 @@ export class TableViewPanel {
 	}
 
 	private async _sendForHtmlWebview(initialize = false, searchText?: string, column?: string) {
-		// const driver = await ConnectionManager.getActiveDriver();
 		const connectionManager = ConnectionManager.getInstance().getConnection(this._table.dbName);
 		const driver = await DriverFactory.create(connectionManager, this._table.dbName);
 
 		const offset = (this._currentPage - 1) * this._pageSize;
-		// const { rows, total } = await driver.getRowsPage(this._table.tableName, this._pageSize, offset);
 		const { rows, total } = await driver.getAllRows(this._table.tableName, this._pageSize, offset, searchText, column);
-
-		console.log("Linhas e total: ", rows, total)
 
 		this._totalPages = Math.ceil(total / this._pageSize) || 1;
 

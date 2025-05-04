@@ -76,15 +76,15 @@ export class QueryRunnerPanel {
     private _getHtmlForWebview(webview: vscode.Webview): string {
         const mediaPath = vscode.Uri.joinPath(this._extensionUri, 'media');
 
-        const htmlPath = path.join(this._extensionUri.fsPath, 'media', 'queryRunner.html');
+        const htmlPath = path.join(this._extensionUri.fsPath, 'src/view/query', 'queryRunner.html');
         let htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaPath, 'queryRunner.js'));
-        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaPath, 'style.css'));
+        // const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaPath, 'queryRunner.js'));
+        // const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaPath, 'style.css'));
 
-        htmlContent = htmlContent
-            .replace('./queryRunner.js', scriptUri.toString())
-            .replace('./style.css', styleUri.toString());
+        // htmlContent = htmlContent
+        // .replace('./queryRunner.js', scriptUri.toString())
+        // .replace('./style.css', styleUri.toString());
 
         return htmlContent;
     }
