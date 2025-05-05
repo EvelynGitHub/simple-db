@@ -101,6 +101,8 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
             const manager = ConnectionManager.getInstance();
             if (config.type === 'sqlite') {
                 config.name = path.basename(config.path as string);
+            } else {
+                config.name = config.database || "Teste " + config.type;
             }
             manager.registerConnection(config);
             treeProvider.refresh();

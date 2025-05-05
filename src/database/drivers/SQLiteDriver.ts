@@ -35,18 +35,6 @@ export class SQLiteDriver implements IDatabaseDriver {
         ));
     }
 
-    async getRowsPage(table: string, limit: number, offset: number): Promise<{ rows: any[]; total: number }> {
-
-        const [{ count }] = await this.db.all<{ count: number }[]>(
-            `SELECT COUNT(*) AS count FROM ${table}`
-        );
-        const rows = await this.db.all(
-            `SELECT * FROM ${table} LIMIT ? OFFSET ?`,
-            [limit, offset]
-        );
-        return { rows, total: count };
-    }
-
     async getAllRows(table: string, limit: number, offset: number, searchText?: string, column?: string): Promise<{ rows: any[]; total: number }> {
         const params: any[] = [];
         let where = "";

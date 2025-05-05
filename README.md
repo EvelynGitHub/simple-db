@@ -127,9 +127,9 @@ simple-db/
 ## 🛣️ Roadmap
 
 - [x] Suporte a SQLite
-- [ ] Suporte a PostgreSQL e MySQL
-- [ ] Autocompletar SQL
-- [ ] Auto save ao pressionar Enter
+- [x] Suporte a PostgreSQL e MySQL
+- [x] Autocompletar SQL
+- [x] Auto save ao pressionar Enter
 - [ ] Editor SQL completo
 
 ---

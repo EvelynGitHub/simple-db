@@ -49,8 +49,11 @@ document.getElementById('nextPage').addEventListener('click', () => {
 // Eventos iniciais
 const $ = (id) => document.getElementById(id);
 $('insertBtn').addEventListener("click", () => {/* openModal(columns, 'insert', null); */ });
-$('refreshBtn').addEventListener("click", () => vscode.postMessage({ type: 'refresh' }));
 $('searchBtn').addEventListener("click", sendSearchMessage);
+$('refreshBtn').addEventListener("click", () => {
+    $('searchInput').value = "";
+    vscode.postMessage({ type: 'refresh' })
+});
 $('searchInput').addEventListener("input", e => e.target.classList.remove('invalid'));
 $('searchInput').addEventListener("keydown", e => {
     if (e.key === 'Enter') {

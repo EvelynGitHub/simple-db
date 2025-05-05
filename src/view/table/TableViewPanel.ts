@@ -48,7 +48,12 @@ export class TableViewPanel {
 		// Atualiza o HTML do painel
 		this._panel.webview.html = this._getHtmlForWebview(this._panel.webview);
 		this._sendForHtmlWebview(true); // Envia os dados para o HTML
-		this._setWebviewMessageListener(this._panel.webview); // Escuta as mensagens do HTML
+		// this._setWebviewMessageListener(this._panel.webview); // Escuta as mensagens do HTML
+		this._panel.webview.onDidReceiveMessage(
+			this._setWebviewMessageListener.bind(this),
+			undefined,
+			this._disposables
+		);
 	}
 
 	public static renderNew(extensionUri: vscode.Uri, table: TableItem) {
@@ -114,74 +119,68 @@ export class TableViewPanel {
 		return htmlContent;
 	}
 
-	private async _setWebviewMessageListener(webview: vscode.Webview) {
-		webview.onDidReceiveMessage(
-			async (message) => {
-				try {
-					const connectionManager = ConnectionManager.getInstance();
-					const connection = connectionManager.getConnection(this._table.dbName);
+	private async _setWebviewMessageListener(message: any) {
+		try {
+			const connectionManager = ConnectionManager.getInstance();
+			const connection = connectionManager.getConnection(this._table.dbName);
 
-					if (!connection) {
-						vscode.window.showWarningMessage(`Conexão perdida com o banco ${this._table.dbName}. Fechando painel.`);
-						this._panel.dispose(); // Fecha o Webview para não deixar a tela travada
-						return;
+			if (!connection) {
+				vscode.window.showWarningMessage(`Conexão perdida com o banco ${this._table.dbName}. Fechando painel.`);
+				this._panel.dispose(); // Fecha o Webview para não deixar a tela travada
+				return;
+			}
+
+			const driver = await DriverFactory.create(connection, this._table.dbName);
+			// console.log('Mensagem recebida do webview HTML: ', message);
+
+			switch (message.type) {
+				case 'insert':
+					await driver.insertRow(this._table.tableName, message.data);
+					vscode.window.showInformationMessage('Inserido novo registro');
+					this._sendForHtmlWebview();
+					break;
+				case 'update':
+					await driver.updateRow(this._table.tableName, message.data, message.originalKeys);
+					vscode.window.showInformationMessage('Atualizar registros selecionados');
+					this._sendForHtmlWebview();
+					break;
+				case 'delete':
+					await driver.deleteRow(this._table.tableName, message.primaryKey, message.primaryKeyValue);
+					vscode.window.showInformationMessage('Deletar registros selecionados');
+					this._sendForHtmlWebview();
+					break;
+				case 'refresh':
+					this._currentPage = 1;
+					this._column = "";
+					this._searchText = "";
+					this._sendForHtmlWebview(false, message.value, message.column);
+					vscode.window.showInformationMessage('Recarregar dados da tabela');
+					break;
+				case 'search':
+					this._currentPage = 1;
+					this._column = message.column ?? "";
+					this._searchText = message.value ?? "";
+					await this._sendForHtmlWebview(false);
+					if (message.page >= 1 && message.page <= this._totalPages) {
+						this._currentPage = message.page;
 					}
-
-					// Usa o driver já cacheado corretamente
-					const driver = await DriverFactory.create(connection, this._table.dbName);
-					// console.log("\t(TableViewPanel.ts -> webview.onDidReceiveMessage): ", message.data, this._table);
-					// console.log('Mensagem recebida do webview HTML: ', message);
-
-					switch (message.type) {
-						case 'insert':
-							await driver.insertRow(this._table.tableName, message.data);
-							vscode.window.showInformationMessage('Inserido novo registro');
-							this._sendForHtmlWebview();
-							break;
-						case 'update':
-							// await driver.updateRow(this._table.tableName, message.primaryKey, message.primaryKeyValue, message.data);
-							await driver.updateRow(this._table.tableName, message.data, message.originalKeys);
-							vscode.window.showInformationMessage('Atualizar registros selecionados');
-							this._sendForHtmlWebview();
-							break;
-						case 'delete':
-							await driver.deleteRow(this._table.tableName, message.primaryKey, message.primaryKeyValue);
-							vscode.window.showInformationMessage('Deletar registros selecionados');
-							this._sendForHtmlWebview();
-							break;
-						case 'refresh':
-							this._sendForHtmlWebview(false, message.value, message.column);
-							vscode.window.showInformationMessage('Recarregar dados da tabela');
-							break;
-						case 'search':
-							this._currentPage = 1;
-							this._column = message.column;
-							this._searchText = message.value;
-							await this._sendForHtmlWebview(false);
-							if (message.page >= 1 && message.page <= this._totalPages) {
-								this._currentPage = message.page;
-							}
-							vscode.window.showInformationMessage(`Buscar por: ${message.value} na coluna ${message.column}`);
-							break;
-						case 'saveAll':
-							this.saveDataAll(driver, message.insert, message.update);
-							this._sendForHtmlWebview();
-							break;
-						case 'changePage':
-							const newPage = message.page;
-							if (newPage >= 1 && newPage <= this._totalPages) {
-								this._currentPage = newPage;
-								await this._sendForHtmlWebview(false);
-							}
-							break;
+					vscode.window.showInformationMessage(`Buscar por: ${message.value} na coluna ${message.column}`);
+					break;
+				case 'saveAll':
+					this.saveDataAll(driver, message.insert, message.update);
+					this._sendForHtmlWebview();
+					break;
+				case 'changePage':
+					const newPage = message.page;
+					if (newPage >= 1 && newPage <= this._totalPages) {
+						this._currentPage = newPage;
+						await this._sendForHtmlWebview(false);
 					}
-				} catch (error: any) {
-					vscode.window.showErrorMessage('Erro: ' + error.message);
-				}
-			},
-			undefined,
-			this._disposables
-		);
+					break;
+			}
+		} catch (error: any) {
+			vscode.window.showErrorMessage('Erro: ' + error.message);
+		}
 	}
 
 	public dispose() {
@@ -202,8 +201,6 @@ export class TableViewPanel {
 
 		const offset = (this._currentPage - 1) * this._pageSize;
 		const { rows, total } = await driver.getAllRows(this._table.tableName, this._pageSize, offset, this._searchText, this._column);
-
-		console.log("total: ", total);
 
 		this._totalPages = Math.ceil(total / this._pageSize) || 1;
 

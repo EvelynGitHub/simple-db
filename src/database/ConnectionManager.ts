@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 export type ConnectionConfig = {
     name: string; // nome do banco de dados
     type: 'sqlite' | 'mysql' | 'postgres';
+    database?: string; // nome do banco de dados
     path?: string;    // caminho do arquivo, usado para SQLite
     host?: string;    // endereço do servidor, usado para MySQL/Postgres
     user?: string;    // usuário de conexão
