@@ -22,7 +22,6 @@ export class SQLiteDriver implements IDatabaseDriver {
 
     async getColumns(table: string): Promise<ColumnItem[]> {
         const rows = await this.db.all(`PRAGMA table_info(${table})`);
-        console.log("Dados das COLUNAS: ", rows);
         return rows.map(r => new ColumnItem(
             r.name,
             r.type,
@@ -36,18 +35,6 @@ export class SQLiteDriver implements IDatabaseDriver {
         ));
     }
 
-    async getRowsPage(table: string, limit: number, offset: number): Promise<{ rows: any[]; total: number }> {
-
-        const [{ count }] = await this.db.all<{ count: number }[]>(
-            `SELECT COUNT(*) AS count FROM ${table}`
-        );
-        const rows = await this.db.all(
-            `SELECT * FROM ${table} LIMIT ? OFFSET ?`,
-            [limit, offset]
-        );
-        return { rows, total: count };
-    }
-
     async getAllRows(table: string, limit: number, offset: number, searchText?: string, column?: string): Promise<{ rows: any[]; total: number }> {
         const params: any[] = [];
         let where = "";
@@ -58,7 +45,7 @@ export class SQLiteDriver implements IDatabaseDriver {
         }
 
         const [{ count }] = await this.db.all<{ count: number }[]>(
-            `SELECT COUNT(*) AS count FROM ${table} ${where}`
+            `SELECT COUNT(*) AS count FROM ${table} ${where}`, params
         );
 
         let sql = `SELECT * FROM ${table} ${where} LIMIT ? OFFSET ?`;

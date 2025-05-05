@@ -2,42 +2,19 @@ import * as vscode from 'vscode';
 import path from 'path';
 import { DatabaseTreeProvider } from '../tree/DatabaseTreeProvider';
 import { TableItem } from '../tree/TableItem';
-import { TableViewPanel } from '../view/TableViewPanel';
+import { TableViewPanel } from '../view/table/TableViewPanel';
 import { DatabaseItem } from '../tree/DatabaseItem';
 import { ConnectionConfig, ConnectionManager } from '../database/ConnectionManager';
-import { ConnectionFormPanel } from '../view/ConnectionFormPanel';
+import { ConnectionFormPanel } from '../view/connection/ConnectionFormPanel';
 import { DriverFactory } from '../database/DriverFactory';
 import { QueryRunnerPanel } from '../view/query/QueryRunnerPanel';
-import { SettingsPanel } from '../view/SettingsPanel';
+import { SettingsPanel } from '../view/settings/SettingsPanel';
 
 export function RegisterCommands(context: vscode.ExtensionContext, treeProvider: DatabaseTreeProvider) {
     let uri = context.extensionUri;
 
     context.subscriptions.push(
         vscode.commands.registerCommand('simple-db.refreshDatabases', () => treeProvider.refresh()),
-        // vscode.commands.registerCommand('simple-db.connectDatabase', async () => {
-        //     const uri = await vscode.window.showOpenDialog({
-        //         canSelectMany: false,
-        //         filters: {
-        //             'SQLite': ['db', 'sqlite'],
-        //             'All Files': ['*']
-        //         }
-        //     });
-
-        //     if (!uri || uri.length === 0) return;
-
-        //     const filePath = uri[0].fsPath;
-        //     const dbName = path.basename(filePath);
-
-        //     const connectionManager = ConnectionManager.getInstance();
-        //     connectionManager.registerConnection({
-        //         name: dbName,
-        //         path: filePath,
-        //         type: 'sqlite'
-        //     });
-
-        //     treeProvider.refresh();
-        // }),
         vscode.commands.registerCommand('simple-db.deleteDatabase', async (databaseItem: DatabaseItem) => {
             const confirm = await vscode.window.showWarningMessage(`Remover conexão com ${databaseItem.label}?`, 'Sim', 'Cancelar');
 
@@ -124,6 +101,8 @@ export function RegisterCommands(context: vscode.ExtensionContext, treeProvider:
             const manager = ConnectionManager.getInstance();
             if (config.type === 'sqlite') {
                 config.name = path.basename(config.path as string);
+            } else {
+                config.name = config.database || "Teste " + config.type;
             }
             manager.registerConnection(config);
             treeProvider.refresh();

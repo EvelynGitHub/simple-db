@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./style.css" rel="stylesheet" />
+    <title>Simple DB - Tabela</title>
+</head>
+
+<body>
+
+    <h2>Tabela Interativa</h2>
+
+    <div class="toolbar">
+        <div class="search-group">
+            <select id="searchColumn"></select>
+            <input type="search" id="searchInput" placeholder="Buscar..." />
+            <button id="searchBtn">Pesquisar</button>
+        </div>
+    </div>
+
+    <div class="actions-row">
+        <div class="options">
+            <label class="label-checkbox">
+                Auto Save
+                <input type="checkbox" id="autoSave" checked />
+            </label>
+        </div>
+        <button id="insertBtn" onclick="addNewRow()">+ Nova linha</button>
+        <button id="refreshBtn">Atualizar Página</button>
+        <button onclick="saveAll()">Salvar alterações</button>
+    </div>
+
+    <div id="container-table">
+        <!-- Tabela será renderizada aqui -->
+        <!-- <table>
+            <thead id="table-head"></thead>
+            <tbody id="table-body"></tbody>
+        </table> -->
+    </div>
+
+    <div id="pagination-controls" style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+        <button id="prevPage">‹ Prev</button>
+        <span id="pageIndicator">1 / 1</span>
+        <button id="nextPage">Next ›</button>
+    </div>
+    <div id="table-container"></div>
+
+    <script src="./script.js"></script>
+
+</body>
+
+</html>

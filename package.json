@@ -4,6 +4,16 @@
   "description": "Gerenciador de banco de dados simples",
   "version": "0.0.1",
   "publisher": "meu-publisher",
+  "license": "Apache-2.0",
+  "icon": "media/logo.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EvelynGitHub/simple-db.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EvelynGitHub/simple-db/issues"
+  },
+  "homepage": "https://github.com/EvelynGitHub/simple-db#readme",
   "engines": {
     "vscode": "^1.99.0"
   },

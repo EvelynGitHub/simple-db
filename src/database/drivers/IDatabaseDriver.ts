@@ -13,10 +13,7 @@ export interface IDatabaseDriver {
 
     getTables(): Promise<string[]>;
     getColumns(table: string): Promise<ColumnItem[]>;
-    // getAllRows(table: string, searchText?: string, column?: string): Promise<any[]>;
-    getRowsPage(table: string, limit: number, offset: number): Promise<{ rows: any[]; total: number }>;
     getAllRows(table: string, limit: number, offset: number, searchText?: string, column?: string): Promise<{ rows: any[]; total: number }>;
-
 
     insertRow(table: string, row: Record<string, any>): Promise<void>;
     updateRow(table: string, data: Record<string, any> | Record<string, any>[], keys: any): Promise<number>;

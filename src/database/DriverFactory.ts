@@ -40,7 +40,7 @@ export class DriverFactory {
             case 'mysql': {
                 try {
                     const { MySQLDriver } = await import('./drivers/MySQLDriver');
-                    driver = new MySQLDriver(config.host!, config.user!, config.password!, config.name || dbName);
+                    driver = new MySQLDriver(config);
                     break;
                 } catch (error) {
                     throw new Error('Pacote mysql2 não encontrado. Por favor, instale com: npm install mysql2');
@@ -49,7 +49,7 @@ export class DriverFactory {
             case 'postgres': {
                 try {
                     const { PostgresDriver } = await import('./drivers/PostgresDriver');
-                    driver = new PostgresDriver(config.host!, config.user!, config.password!, config.name || dbName);
+                    driver = new PostgresDriver(config);
                     break;
                 } catch (error) {
                     throw new Error('Pacote pg não encontrado. Por favor, instale com: npm install pg');
