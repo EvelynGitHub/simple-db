@@ -148,7 +148,15 @@
             'GROUP BY', 'ORDER BY', 'LIMIT', 'INSERT INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE',
             'CREATE TABLE', 'DROP TABLE', 'ALTER TABLE', 'ADD COLUMN'
         ];
-
+        const sqlKeywordsBeforeTable = [
+            'FROM', 'JOIN', 'INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN',
+            'INSERT INTO', 'UPDATE', 'DELETE',
+            'CREATE TABLE', 'DROP TABLE', 'ALTER TABLE', 'ADD COLUMN'
+        ];
+        const sqlKeywordsBeforeColumns = [
+            'SELECT', 'WHERE', 'AND', 'IN', 'OR', 'ON',
+            'GROUP BY', 'ORDER BY', 'LIMIT', 'VALUES', 'SET'
+        ];
 
         const textareaQuery = document.getElementById("textareaQuery");
         const autocomplete = document.getElementById('autocomplete-container');
@@ -156,16 +164,7 @@
         const clearBtn = document.getElementById("clearBtn");
         const resultDiv = document.getElementById("queryResult");
 
-        executeBtn.addEventListener("click", () => {
-            const query = textareaQuery.value.trim();
-            if (!query) return;
-
-            resultDiv.textContent = "Executando...";
-            vscode.postMessage({
-                type: "runQuery",
-                query
-            });
-        });
+        executeBtn.addEventListener("click", executeQuery);
 
         clearBtn.addEventListener("click", () => {
             textareaQuery.value = "";
@@ -179,8 +178,10 @@
             const lastWord = words.at(-1)?.toUpperCase();
             const prevWord = words.at(-2)?.toUpperCase();
 
-            const shouldSuggestTables = ['FROM', 'JOIN', 'INTO', 'UPDATE'].includes(prevWord) || ['FROM', 'JOIN'].includes(prevWord);
-            const shouldSuggestColumns = lastWord === 'SELECT' || prevWord === 'SELECT';
+            // const shouldSuggestTables = ['FROM', 'JOIN', 'INTO', 'UPDATE'].includes(prevWord) || ['FROM', 'JOIN'].includes(lastWord);
+            // const shouldSuggestColumns = lastWord === 'SELECT' || prevWord === 'SELECT';
+            const shouldSuggestTables = sqlKeywordsBeforeTable.includes(prevWord) || sqlKeywordsBeforeTable.includes(lastWord);
+            const shouldSuggestColumns = sqlKeywordsBeforeColumns.includes(prevWord) || sqlKeywordsBeforeColumns.includes(lastWord);
 
             let suggestions = [];
 
@@ -203,7 +204,6 @@
 
 
             if (suggestions.length > 0) {
-                // showSuggestions(suggestions, textareaQuery);
                 showSuggestions(filteredSuggestions, textareaQuery);
             } else {
                 autocomplete.style.display = 'none';
@@ -238,32 +238,27 @@
                 }
             }
 
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                executeQuery(); // Função que executa a consulta
+            }
+
             if (e.key === 'Escape') {
                 clearSuggestions();
             }
         });
 
-        // function showSuggestions(suggestions, textarea) {
-        //     const rect = textarea.getBoundingClientRect();
-        //     autocomplete.innerHTML = '';
-        //     suggestions.forEach(s => {
-        //         const div = document.createElement('div');
-        //         div.textContent = s;
-        //         div.style.padding = '4px 8px';
-        //         div.style.cursor = 'pointer';
-        //         div.addEventListener('click', () => insertSuggestion(s));
-        //         div.addEventListener('mouseover', () => div.style.background = 'var(--vscode-editor-hoverHighlightBackground)');
-        //         div.addEventListener('mouseout', () => div.style.background = 'transparent');
-        //         autocomplete.appendChild(div);
-        //     });
+        function executeQuery() {
+            // const query = textareaQuery.value.trim();
+            const query = getSelectedOrCurrentLine();
+            if (!query) return;
 
-        //     // Posiciona abaixo do textareaQuery
-        //     autocomplete.style.left = rect.left + 'px';
-        //     autocomplete.style.top = (rect.bottom + window.scrollY) + 'px';
-        //     autocomplete.style.width = rect.width + 'px';
-        //     autocomplete.style.display = 'block';
-        // }
-
+            resultDiv.textContent = "Executando...";
+            vscode.postMessage({
+                type: "runQuery",
+                query
+            });
+        }
 
         function showSuggestions(suggestions, textarea) {
             clearSuggestions();
@@ -298,24 +293,6 @@
         }
 
         function insertSuggestion(text) {
-            // const start = textareaQuery.selectionStart;
-            // const value = textareaQuery.value;
-
-            // // Encontrar a palavra atual (última palavra digitada)
-            // const before = value.slice(0, start);
-            // const match = before.match(/(\w*)$/); // última palavra
-            // const wordStart = match ? start - match[1].length : start;
-
-            // // Montar novo valor com substituição apenas da última palavra
-            // const newValue = value.slice(0, wordStart) + text + value.slice(start);
-            // textareaQuery.value = newValue;
-
-            // // Posicionar o cursor após a sugestão inserida
-            // const newPos = wordStart + text.length;
-            // textareaQuery.setSelectionRange(newPos, newPos);
-            // textareaQuery.focus();
-
-            // autocomplete.style.display = 'none';
             const cursorPos = textareaQuery.selectionStart;
             const textBefore = textareaQuery.value.slice(0, cursorPos);
             const textAfter = textareaQuery.value.slice(cursorPos);
@@ -353,6 +330,31 @@
             }
         }
 
+        function getSelectedOrCurrentLine() {
+            const { selectionStart, selectionEnd, value } = textareaQuery;
+
+            // Caso haja seleção de texto
+            if (selectionStart !== selectionEnd) {
+                return value.substring(selectionStart, selectionEnd).trim();
+            }
+
+            // Caso contrário, busca o bloco de query em torno do cursor
+            const cursorPos = selectionStart;
+
+            // Adiciona um espaço no final do texto para garantir indexOf não falha após o último caractere
+            const paddedValue = value + ' ';
+
+            // Encontra o índice do último `;` antes ou no cursor
+            let start = paddedValue.lastIndexOf(';', cursorPos - 1);
+            start = start === -1 ? 0 : start + 1;
+
+            // Encontra o índice do próximo `;` após o cursor
+            let end = paddedValue.indexOf(';', cursorPos);
+            end = end === -1 ? value.length : end;
+
+            const query = value.substring(start, end).trim();
+            return query;
+        }
 
         // Esconde quando clicar fora
         document.addEventListener('click', (e) => {

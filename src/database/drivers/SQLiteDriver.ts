@@ -22,7 +22,6 @@ export class SQLiteDriver implements IDatabaseDriver {
 
     async getColumns(table: string): Promise<ColumnItem[]> {
         const rows = await this.db.all(`PRAGMA table_info(${table})`);
-        console.log("Dados das COLUNAS: ", rows);
         return rows.map(r => new ColumnItem(
             r.name,
             r.type,
@@ -58,7 +57,7 @@ export class SQLiteDriver implements IDatabaseDriver {
         }
 
         const [{ count }] = await this.db.all<{ count: number }[]>(
-            `SELECT COUNT(*) AS count FROM ${table} ${where}`
+            `SELECT COUNT(*) AS count FROM ${table} ${where}`, params
         );
 
         let sql = `SELECT * FROM ${table} ${where} LIMIT ? OFFSET ?`;

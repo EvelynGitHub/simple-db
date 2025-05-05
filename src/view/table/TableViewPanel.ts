@@ -33,6 +33,8 @@ export class TableViewPanel {
 	private _pageSize = ExtensionConfig.get().pageSize;
 	private _currentPage = 1;
 	private _totalPages = 1;
+	private _searchText?: string = "";
+	private _column?: string = "";
 
 	private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, table: TableItem) {
 		this._panel = panel;
@@ -152,11 +154,13 @@ export class TableViewPanel {
 							vscode.window.showInformationMessage('Recarregar dados da tabela');
 							break;
 						case 'search':
+							this._currentPage = 1;
+							this._column = message.column;
+							this._searchText = message.value;
+							await this._sendForHtmlWebview(false);
 							if (message.page >= 1 && message.page <= this._totalPages) {
 								this._currentPage = message.page;
-								await this._sendForHtmlWebview(false);
 							}
-							this._sendForHtmlWebview(false, message.value, message.column);
 							vscode.window.showInformationMessage(`Buscar por: ${message.value} na coluna ${message.column}`);
 							break;
 						case 'saveAll':
@@ -197,7 +201,9 @@ export class TableViewPanel {
 		const driver = await DriverFactory.create(connectionManager, this._table.dbName);
 
 		const offset = (this._currentPage - 1) * this._pageSize;
-		const { rows, total } = await driver.getAllRows(this._table.tableName, this._pageSize, offset, searchText, column);
+		const { rows, total } = await driver.getAllRows(this._table.tableName, this._pageSize, offset, this._searchText, this._column);
+
+		console.log("total: ", total);
 
 		this._totalPages = Math.ceil(total / this._pageSize) || 1;
 

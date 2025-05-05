@@ -52,6 +52,12 @@ $('insertBtn').addEventListener("click", () => {/* openModal(columns, 'insert', 
 $('refreshBtn').addEventListener("click", () => vscode.postMessage({ type: 'refresh' }));
 $('searchBtn').addEventListener("click", sendSearchMessage);
 $('searchInput').addEventListener("input", e => e.target.classList.remove('invalid'));
+$('searchInput').addEventListener("keydown", e => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        sendSearchMessage(); // Função que executa a consulta
+    }
+});
 $('searchColumn').addEventListener("change", e => e.target.classList.remove('invalid'));
 
 // fetch('data.json')
@@ -73,18 +79,14 @@ function sendSearchMessage() {
         valid = false;
     }
 
-    if (!input.value.trim()) {
-        input.classList.add('invalid');
-        valid = false;
-    }
+    // if (!input.value.trim()) {
+    //     input.classList.add('invalid');
+    //     valid = false;
+    // }
 
     if (valid) {
         vscode.postMessage({ type: 'search', value: input.value, column: column.value, page: currentPage });
     }
-
-    // console.log('Valor da pesquisa:', input);
-    // console.log('Coluna da pesquisa:', column);
-    // vscode.postMessage({ type: 'search', value, column });
 }
 
 

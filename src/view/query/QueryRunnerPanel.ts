@@ -74,11 +74,11 @@ export class QueryRunnerPanel {
     }
 
     private _getHtmlForWebview(webview: vscode.Webview): string {
-        const mediaPath = vscode.Uri.joinPath(this._extensionUri, 'media');
 
         const htmlPath = path.join(this._extensionUri.fsPath, 'src/view/query', 'queryRunner.html');
         let htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
+        // const mediaPath = vscode.Uri.joinPath(this._extensionUri, 'media');
         // const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaPath, 'queryRunner.js'));
         // const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaPath, 'style.css'));
 
@@ -92,8 +92,6 @@ export class QueryRunnerPanel {
     private _setWebviewMessageListener(webview: vscode.Webview) {
         webview.onDidReceiveMessage(async (message) => {
             if (message.type === 'runQuery') {
-                console.log("\n(1) onDidReceiveMessage.runQuery ", message);
-
                 const query = message.query;
                 const { success, result } = await QueryRunner.runQuery(this._dbName, query);
 
