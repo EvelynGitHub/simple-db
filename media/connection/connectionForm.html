@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Adicionar Banco de Dados</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+
+        body {
+            font-family: var(--vscode-font-family, sans-serif);
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            padding: 24px;
+            font-size: 13px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: var(--vscode-editor-foreground);
+            text-align: center;
+        }
+
+        .form-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            padding-bottom: 10px;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+        }
+
+        input,
+        select {
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 2px;
+            padding: 5px 8px;
+            font-size: 13px;
+            max-width: 100%;
+        }
+
+        input:focus,
+        select:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+        }
+
+        input[readonly] {
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            opacity: 0.8;
+        }
+
+        .sqlite-path-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sqlite-path-row input {
+            flex: 1;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 6px 14px;
+            border-radius: 2px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+        }
+
+        #btnSave {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+        }
+
+        #btnSave:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+
+        #btnTest {
+            background-color: var(--vscode-button-secondaryBackground, #3a3d41);
+            color: var(--vscode-button-secondaryForeground, #fff);
+        }
+
+        #btnTest:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground, #505356);
+        }
+
+        #btnCancel {
+            background-color: transparent;
+            border: 1px solid var(--vscode-editorWidget-border, #8884);
+            color: var(--vscode-editor-foreground);
+        }
+
+        #btnCancel:hover {
+            background-color: var(--vscode-editorWidget-background);
+        }
+
+        .hint {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 8px;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Adicionar Banco de Dados</h2>
+    <div class="form-container">
+        <div class="section">
+            <label>Tipo de Banco:
+                <select id="dbType">
+                    <option value="sqlite">SQLite</option>
+                    <option value="mysql">MySQL</option>
+                    <option value="postgres">Postgres</option>
+                </select>
+            </label>
+        </div>
+
+        <div id="sqliteFields" class="section">
+            <div class="sqlite-path-row">
+                <button type="button" id="path">Selecionar</button>
+                <input type="text" id="pathDisplay" readonly>
+            </div>
+            <div class="hint">Exemplo: C:/projetos/meubanco.sqlite</div>
+        </div>
+
+        <div id="serverFields" class="section hidden">
+            <label>Host:
+                <input id="host" type="text" placeholder="localhost" />
+            </label>
+            <label>Usuário:
+                <input id="user" type="text" />
+            </label>
+            <label>Senha:
+                <input id="password" type="password" />
+            </label>
+            <label>Nome do Banco:
+                <input id="database" type="text" />
+            </label>
+        </div>
+
+        <div class="actions">
+            <button id="btnTest">Testar Conexão</button>
+            <button id="btnSave">Salvar Conexão</button>
+            <button id="btnCancel">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+
+        const dbTypeSelect = document.getElementById('dbType');
+        const sqliteFields = document.getElementById('sqliteFields');
+        const serverFields = document.getElementById('serverFields');
+
+        const btnTest = document.getElementById('btnTest');
+        const btnSave = document.getElementById('btnSave');
+        const btnCancel = document.getElementById('btnCancel');
+        const btnPath = document.getElementById('path');
+        const inputPathDisplay = document.getElementById('pathDisplay');
+
+        window.addEventListener('message', event => {
+            const { type, path } = event.data;
+            if (type === 'fileSelected') {
+                inputPathDisplay.value = path;
+            }
+        });
+
+        function updateFields() {
+            if (dbTypeSelect.value === 'sqlite') {
+                sqliteFields.classList.remove('hidden');
+                serverFields.classList.add('hidden');
+            } else {
+                sqliteFields.classList.add('hidden');
+                serverFields.classList.remove('hidden');
+            }
+        }
+
+        dbTypeSelect.addEventListener('change', updateFields);
+        updateFields();
+
+        btnTest.addEventListener('click', () => {
+            const config = getFormData();
+            vscode.postMessage({ type: 'testConnection', config });
+        });
+
+        btnSave.addEventListener('click', () => {
+            const config = getFormData();
+            vscode.postMessage({ type: 'saveConnection', config });
+        });
+
+        btnCancel.addEventListener('click', () => {
+            vscode.postMessage({ type: 'cancel' });
+        });
+
+        btnPath.addEventListener('click', () => {
+            vscode.postMessage({ type: 'pickFile' });
+        });
+
+        function getFormData() {
+            const dbType = dbTypeSelect.value;
+            if (dbType === 'sqlite') {
+                return {
+                    type: 'sqlite',
+                    path: inputPathDisplay.value
+                };
+            } else {
+                return {
+                    type: dbType,
+                    host: document.getElementById('host').value.trim(),
+                    user: document.getElementById('user').value.trim(),
+                    password: document.getElementById('password').value.trim(),
+                    database: document.getElementById('database').value.trim()
+                };
+            }
+        }
+    </script>
+</body>
+
+</html>

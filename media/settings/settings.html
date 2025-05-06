@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+
+        body {
+            font-family: var(--vscode-font-family, sans-serif);
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            padding: 24px;
+            font-size: 13px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: var(--vscode-editor-foreground);
+            text-align: center;
+        }
+
+        .form-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--vscode-panel-border);
+            padding-bottom: 10px;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+        }
+
+        input,
+        select {
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 2px;
+            padding: 5px 8px;
+            font-size: 13px;
+            max-width: 100%;
+        }
+
+        input:focus,
+        select:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+        }
+
+        input[readonly] {
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            opacity: 0.8;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .options {
+            margin-left: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: start;
+            font-size: 12px;
+        }
+
+        .options .label-checkbox {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button {
+            padding: 6px 14px;
+            border-radius: 2px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+        }
+
+        #btnSave {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+        }
+
+        #btnSave:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+
+        .hint {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 8px;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Configurações da Extensão</h2>
+
+    <div class="form-container">
+        <label>
+            Registros por página:
+            <input id="pageSize" type="number" min="1" />
+        </label>
+
+        <div class="options">
+            <label class="label-checkbox">
+                <input id="autoSave" type="checkbox" />
+                Salvar alterações automaticamente mediante clique do ENTER
+            </label>
+
+            <label class="label-checkbox">
+                <input id="autoComplete" type="checkbox" />
+                Auto completar
+            </label>
+        </div>
+
+        <div class="actions">
+            <button id="btnSave">Salvar</button>
+        </div>
+
+        <!-- <img src="{{img1}}" alt="Teste para exibir imagem" width="300px"> -->
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+        const inputPageSize = document.getElementById("pageSize")
+        const inputAutoSave = document.getElementById("autoSave")
+        const inputAutoComplete = document.getElementById("autoComplete")
+
+        // Recebe dados do VSCode
+        window.addEventListener("message", event => {
+            const { type, payload } = event.data;
+
+            if (type === 'initializeSettings') {
+                inputPageSize.value = payload.pageSize
+                inputAutoSave.checked = payload.autoSave
+                inputAutoComplete.checked = payload.autoComplete
+            }
+        });
+
+        document.getElementById('btnSave').onclick = () => {
+            const settings = {
+                pageSize: parseInt(document.getElementById('pageSize').value),
+                autoSave: document.getElementById('autoSave').checked,
+                autoComplete: document.getElementById('autoComplete').checked,
+            };
+            vscode.postMessage({ type: 'saveSettings', settings });
+        };
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,390 @@
+<!-- media/queryRunner.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Executar Query</title>
+    <!-- <link rel="stylesheet" href="./style.css"> -->
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+
+        body {
+            font-family: var(--vscode-font-family, sans-serif);
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            padding: 20px;
+            font-size: 13px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        textarea#textareaQuery {
+            width: 100%;
+            height: 150px;
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            font-family: monospace;
+            font-size: 13px;
+            border-radius: 3px;
+            padding: 10px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        .query-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 16px;
+        }
+
+        .query-actions button {
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 2px;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s ease;
+        }
+
+        #executeBtn {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+        }
+
+        #executeBtn:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+
+        #clearBtn {
+            background-color: transparent;
+            border: 1px solid var(--vscode-editorWidget-border);
+            color: var(--vscode-editor-foreground);
+        }
+
+        #clearBtn:hover {
+            background-color: var(--vscode-editorWidget-background);
+        }
+
+        #queryResult {
+            margin-top: 20px;
+            background-color: var(--vscode-editorWidget-background);
+            border: 1px solid var(--vscode-editorWidget-border);
+            padding: 12px;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .query-error {
+            color: var(--vscode-errorForeground);
+            font-weight: bold;
+        }
+
+        .query-success {
+            color: var(--vscode-terminal-ansiGreen);
+        }
+
+        .hint {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 4px;
+            margin-bottom: 5px;
+        }
+
+        .autocomplete-item.selected {
+            background-color: var(--vscode-editorSuggestWidget-selectedBackground);
+            color: var(--vscode-editorSuggestWidget-selectedForeground);
+        }
+    </style>
+
+</head>
+
+<body>
+    <h2>Executar Query SQL</h2>
+
+    <textarea id="textareaQuery" placeholder="Digite sua query SQL aqui..."></textarea>
+    <p class="hint">Não esqueça do <b>limit</b> no <i> select</i> e do <b>where</b> no <i>update</i> ;) </p>
+    <div class="query-actions">
+        <button id="executeBtn">Executar</button>
+        <button id="clearBtn">Limpar</button>
+    </div>
+    <div id="queryResult">Resultado aparecerá aqui...</div>
+
+    <div id="autocomplete-container" style="display: none;
+        position: absolute;
+        z-index: 999;
+        background: var(--vscode-editor-background);
+        border: 1px solid var(--vscode-editorWidget-border);
+        border-radius: 4px;
+        font-family: var(--vscode-editor-font-family);
+        font-size: 13px;
+        max-height: 200px;
+        overflow-y: auto;">
+    </div>
+
+
+    <script>
+        const vscode = acquireVsCodeApi();
+        let dbTables = [];
+        let dbColumnsByTable = {};
+        let selectedIndex = -1;
+        const sqlKeywords = [
+            'SELECT', 'FROM', 'WHERE', 'AND', 'IN', 'OR', 'JOIN', 'ON', 'INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN',
+            'GROUP BY', 'ORDER BY', 'LIMIT', 'INSERT INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE',
+            'CREATE TABLE', 'DROP TABLE', 'ALTER TABLE', 'ADD COLUMN'
+        ];
+        const sqlKeywordsBeforeTable = [
+            'FROM', 'JOIN', 'INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN',
+            'INSERT INTO', 'UPDATE', 'DELETE',
+            'CREATE TABLE', 'DROP TABLE', 'ALTER TABLE', 'ADD COLUMN'
+        ];
+        const sqlKeywordsBeforeColumns = [
+            'SELECT', 'WHERE', 'AND', 'IN', 'OR', 'ON',
+            'GROUP BY', 'ORDER BY', 'LIMIT', 'VALUES', 'SET'
+        ];
+
+        const textareaQuery = document.getElementById("textareaQuery");
+        const autocomplete = document.getElementById('autocomplete-container');
+        const executeBtn = document.getElementById("executeBtn");
+        const clearBtn = document.getElementById("clearBtn");
+        const resultDiv = document.getElementById("queryResult");
+
+        executeBtn.addEventListener("click", executeQuery);
+
+        clearBtn.addEventListener("click", () => {
+            textareaQuery.value = "";
+            resultDiv.textContent = "Resultado aparecerá aqui...";
+        });
+
+        textareaQuery.addEventListener('input', () => {
+            const { value, selectionStart } = textareaQuery;
+            const beforeCursor = value.slice(0, selectionStart);
+            const words = beforeCursor.trim().split(/\s+/);
+            const lastWord = words.at(-1)?.toUpperCase();
+            const prevWord = words.at(-2)?.toUpperCase();
+
+            // const shouldSuggestTables = ['FROM', 'JOIN', 'INTO', 'UPDATE'].includes(prevWord) || ['FROM', 'JOIN'].includes(lastWord);
+            // const shouldSuggestColumns = lastWord === 'SELECT' || prevWord === 'SELECT';
+            const shouldSuggestTables = sqlKeywordsBeforeTable.includes(prevWord) || sqlKeywordsBeforeTable.includes(lastWord);
+            const shouldSuggestColumns = sqlKeywordsBeforeColumns.includes(prevWord) || sqlKeywordsBeforeColumns.includes(lastWord);
+
+            let suggestions = [];
+
+            if (shouldSuggestTables) {
+                suggestions = dbTables;
+            } else if (shouldSuggestColumns) {
+                suggestions = Object.entries(dbColumnsByTable)
+                    .flatMap(([table, cols]) => cols.map(col => `${table}.${col}`));
+            } else {
+                // Se não for um contexto SQL claro, sugere palavras-chave
+                suggestions = sqlKeywords;
+            }
+
+            const currentWordMatch = beforeCursor.match(/(\w+)$/);
+            const currentWord = currentWordMatch ? currentWordMatch[1].toLowerCase() : '';
+
+            const filteredSuggestions = suggestions.filter(s =>
+                s.toLowerCase().includes(currentWord)
+            );
+
+
+            if (suggestions.length > 0) {
+                showSuggestions(filteredSuggestions, textareaQuery);
+            } else {
+                autocomplete.style.display = 'none';
+            }
+        });
+
+        textareaQuery.addEventListener('keydown', (e) => {
+            const items = Array.from(autocomplete.children);
+
+            if (e.key === 'ArrowDown') {
+                if (autocomplete.style.display === 'block') {
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex + 1) % items.length;
+                    highlightSelected();
+                }
+            }
+
+            if (e.key === 'ArrowUp') {
+                if (autocomplete.style.display === 'block') {
+                    e.preventDefault();
+                    selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+                    highlightSelected();
+                }
+            }
+
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                if (autocomplete.style.display === 'block' && selectedIndex >= 0) {
+                    e.preventDefault();
+                    const selected = items[selectedIndex];
+                    if (selected) insertSuggestion(selected.textContent);
+                    clearSuggestions();
+                }
+            }
+
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                executeQuery(); // Função que executa a consulta
+            }
+
+            if (e.key === 'Escape') {
+                clearSuggestions();
+            }
+        });
+
+        function executeQuery() {
+            // const query = textareaQuery.value.trim();
+            const query = getSelectedOrCurrentLine();
+            if (!query) return;
+
+            resultDiv.textContent = "Executando...";
+            vscode.postMessage({
+                type: "runQuery",
+                query
+            });
+        }
+
+        function showSuggestions(suggestions, textarea) {
+            clearSuggestions();
+            if (suggestions.length === 0) return;
+
+            const rect = textarea.getBoundingClientRect();
+
+            suggestions.forEach((s, index) => {
+                const div = document.createElement('div');
+                div.textContent = s;
+                div.style.padding = '4px 8px';
+                div.style.cursor = 'pointer';
+                div.className = 'autocomplete-item';
+
+                if (index === selectedIndex) {
+                    div.classList.add('selected');
+                }
+
+                div.addEventListener('click', () => insertSuggestion(s));
+                div.addEventListener('mouseover', () => {
+                    selectedIndex = index;
+                    highlightSelected();
+                });
+
+                autocomplete.appendChild(div);
+            });
+
+            autocomplete.style.left = rect.left + 'px';
+            autocomplete.style.top = (rect.bottom + window.scrollY) + 'px';
+            autocomplete.style.width = rect.width + 'px';
+            autocomplete.style.display = 'block';
+        }
+
+        function insertSuggestion(text) {
+            const cursorPos = textareaQuery.selectionStart;
+            const textBefore = textareaQuery.value.slice(0, cursorPos);
+            const textAfter = textareaQuery.value.slice(cursorPos);
+
+            const match = textBefore.match(/(\w+)$/);
+            const lastWord = match ? match[1] : '';
+            const newTextBefore = match
+                ? textBefore.slice(0, -lastWord.length) + text
+                : textBefore + text;
+
+            textareaQuery.value = newTextBefore + textAfter;
+            textareaQuery.selectionStart = textareaQuery.selectionEnd = newTextBefore.length;
+            textareaQuery.focus();
+
+            clearSuggestions();
+        }
+
+        function clearSuggestions() {
+            autocomplete.innerHTML = '';
+            autocomplete.style.display = 'none';
+            selectedIndex = -1;
+        }
+
+        function highlightSelected() {
+            const children = autocomplete.children;
+            for (let i = 0; i < children.length; i++) {
+                const isSelected = i === selectedIndex;
+                children[i].classList.toggle('selected', isSelected);
+                if (isSelected) {
+                    children[i].scrollIntoView({
+                        block: 'nearest',
+                        behavior: 'auto'
+                    });
+                }
+            }
+        }
+
+        function getSelectedOrCurrentLine() {
+            const { selectionStart, selectionEnd, value } = textareaQuery;
+
+            // Caso haja seleção de texto
+            if (selectionStart !== selectionEnd) {
+                return value.substring(selectionStart, selectionEnd).trim();
+            }
+
+            // Caso contrário, busca o bloco de query em torno do cursor
+            const cursorPos = selectionStart;
+
+            // Adiciona um espaço no final do texto para garantir indexOf não falha após o último caractere
+            const paddedValue = value + ' ';
+
+            // Encontra o índice do último `;` antes ou no cursor
+            let start = paddedValue.lastIndexOf(';', cursorPos - 1);
+            start = start === -1 ? 0 : start + 1;
+
+            // Encontra o índice do próximo `;` após o cursor
+            let end = paddedValue.indexOf(';', cursorPos);
+            end = end === -1 ? value.length : end;
+
+            const query = value.substring(start, end).trim();
+            return query;
+        }
+
+        // Esconde quando clicar fora
+        document.addEventListener('click', (e) => {
+            if (!autocomplete.contains(e.target)) {
+                autocomplete.style.display = 'none';
+            }
+        });
+
+        // Receber resposta do VSCode
+        window.addEventListener("message", event => {
+            const { type, payload } = event.data;
+
+            if (type === "queryResult") {
+                if (!payload.success) {
+                    resultDiv.innerHTML = `<div class="query-error">${payload.result}</div>`;
+                } else {
+                    const json = JSON.stringify(payload.result, null, 2);
+                    resultDiv.innerHTML = `<pre class="query-success">${json}</pre>`;
+                }
+            }
+
+            if (type === 'dbMetadata') {
+                dbTables = payload.tables;
+                dbColumnsByTable = payload.columnsByTable;
+                console.log('📦 Metadados recebidos:', dbTables, dbColumnsByTable);
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>

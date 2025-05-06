@@ -2,7 +2,7 @@
   "name": "simple-db",
   "displayName": "SimpleDB",
   "description": "Gerenciador de banco de dados simples",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "meu-publisher",
   "license": "Apache-2.0",
   "icon": "media/logo.png",

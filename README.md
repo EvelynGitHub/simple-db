@@ -1,4 +1,8 @@
-# ![Simple DB Logo](https://raw.githubusercontent.com/EvelynGitHub/simple-db/main/media/logo.png)  
+# ![Simple DB Logo](https://raw.githubusercontent.com/EvelynGitHub/simple-db/main/media/logo.png)
+
+
+![image](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black) ![image](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white) ![image](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white) ![image](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black) ![image](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white) ![image](https://img.shields.io/badge/MySQL-00000F?style=for-the-badge&logo=mysql&logoColor=white) ![image](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white) ![image](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white) ![image](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
+
 # Simple DB – VSCode Extension
 
 Extensão para Visual Studio Code para explorar e manipular bancos de dados locais de forma simples e prática.
@@ -20,8 +24,9 @@ Extensão para Visual Studio Code para explorar e manipular bancos de dados loca
 ## 📦 Instalação
 
 ### Via `.vsix` (Instalação Local)
+> Nova versão 0.0.2 liberada
 
-1. Clone o repositório ou baixe o `.vsix` gerado <a href="https://github.com/EvelynGitHub/simple-db/raw/refs/heads/main/simple-db-0.0.1.vsix" download>download aqui</a>:
+1. Clone o repositório ou baixe o `.vsix` gerado <a href="https://github.com/EvelynGitHub/simple-db/raw/refs/heads/main/simple-db-0.0.2.vsix" download>download aqui</a>:
     ```bash
     git clone https://github.com/EvelynGitHub/simple-db.git
     cd simple-db
@@ -31,6 +36,7 @@ Extensão para Visual Studio Code para explorar e manipular bancos de dados loca
     # Caso queira gerar seu próprio .vsix depois de uma modificação
     sudo npm install -g @vscode/vsce # ou npx @vscode/vsce package
 
+    npm run build
     vsce package
     
     ``` 
@@ -38,7 +44,7 @@ Extensão para Visual Studio Code para explorar e manipular bancos de dados loca
 2. No VSCode:
     - Vá até a aba de extensões (`Ctrl+Shift+X`)
     - Clique nos três pontinhos `⋮` → “Instalar via VSIX…”
-    - Selecione o arquivo gerado `simple-db-0.0.1.vsix`
+    - Selecione o arquivo gerado `simple-db-0.0.2.vsix`
 
 
 ### Via Marketplace (em breve)
@@ -82,7 +88,7 @@ simple-db/
 |   │   ├── TableItem.ts
 |   │   └── ColumnItem.ts
 |   │
-|   ├── views/               # Webviews (telas de interação)(Apenas exemplos)
+|   ├── views/               # Webviews (telas de interação)(.html, .css e .js movidos para media por limitação do VScode)
 |   │   ├── connection/       # Tudo relacionado a Conexões
 |   │   │   ├── ConnectionFormPanel.ts
 |   │   │   └── connectionForm.html
@@ -103,7 +109,7 @@ simple-db/
 |   │   ├── Config.ts
 |   │   └── Helpers.ts
 |   ├── extension.ts         # Ponto principal da extensão
-├── media/ 
+├── media/ # Arquivos estáticos 
 │   └── logo.svg # Ícone/Logo da extensão 
 ├── types.ts             # Definições globais de tipos
 ├── tsconfig.json

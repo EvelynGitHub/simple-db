@@ -32,7 +32,7 @@ export class SettingsPanel {
 	}
 
 	private _getHtml() {
-		const htmlPath = path.join(this._extensionUri.fsPath, 'src/view/settings', 'settings.html');
+		const htmlPath = path.join(this._extensionUri.fsPath, 'media/settings', 'settings.html');
 		let htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
 		// const mediaPath = vscode.Uri.joinPath(this._extensionUri, 'media');

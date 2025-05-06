@@ -41,7 +41,7 @@ export class ConnectionFormPanel {
     }
 
     private _getHtml(): string {
-        const htmlPath = path.join(this._extensionUri.fsPath, 'src/view/connection', 'connectionForm.html');
+        const htmlPath = path.join(this._extensionUri.fsPath, 'media/connection', 'connectionForm.html');
         let html = fs.readFileSync(htmlPath, 'utf8');
         return html;
     }

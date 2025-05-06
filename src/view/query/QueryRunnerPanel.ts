@@ -75,7 +75,7 @@ export class QueryRunnerPanel {
 
     private _getHtmlForWebview(webview: vscode.Webview): string {
 
-        const htmlPath = path.join(this._extensionUri.fsPath, 'src/view/query', 'queryRunner.html');
+        const htmlPath = path.join(this._extensionUri.fsPath, 'media/query', 'queryRunner.html');
         let htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
         // const mediaPath = vscode.Uri.joinPath(this._extensionUri, 'media');

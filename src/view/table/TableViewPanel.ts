@@ -63,7 +63,7 @@ export class TableViewPanel {
 			vscode.ViewColumn.One,
 			{
 				enableScripts: true,
-				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'src/view/table')],
+				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media/table')],
 				retainContextWhenHidden: true, // <-- Mantém o estado ao esconder
 			}
 		);
@@ -92,7 +92,7 @@ export class TableViewPanel {
 			vscode.ViewColumn.One,
 			{
 				enableScripts: true,
-				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'src/view/table')],
+				localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media/table')],
 				retainContextWhenHidden: true, // <-- Mantém o estado ao esconder
 			}
 		);
@@ -103,9 +103,9 @@ export class TableViewPanel {
 
 
 	private _getHtmlForWebview(webview: vscode.Webview): string {
-		const mediaPath = vscode.Uri.joinPath(this._extensionUri, 'src/view/table');
+		const mediaPath = vscode.Uri.joinPath(this._extensionUri, 'media/table');
 
-		const htmlPath = path.join(this._extensionUri.fsPath, 'src/view/table', 'index.html');
+		const htmlPath = path.join(this._extensionUri.fsPath, 'media/table', 'index.html');
 		let htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
 		const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaPath, 'style.css'));
