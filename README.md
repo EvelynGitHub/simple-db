@@ -21,7 +21,7 @@ Extensão para Visual Studio Code para explorar e manipular bancos de dados loca
 
 ### Via `.vsix` (Instalação Local)
 
-1. Clone o repositório ou baixe o `.vsix` gerado [aqui](https://github.com/EvelynGitHub/simple-db/blob/main/simple-db-0.0.1.vsix):
+1. Clone o repositório ou baixe o `.vsix` gerado <a href="https://github.com/EvelynGitHub/simple-db/raw/refs/heads/main/simple-db-0.0.1.vsix" download>download aqui</a>:
     ```bash
     git clone https://github.com/EvelynGitHub/simple-db.git
     cd simple-db
@@ -48,7 +48,7 @@ A extensão será publicada futuramente no Marketplace do VSCode.
 
 ## 🚀 Funcionalidades
 
-- [x] Conectar a bancos SQLite (outros bancos em breve)
+- [x] Conectar a bancos SQLite, PostgresSQL e MySql
 - [x] Navegar por bancos, tabelas e colunas na **barra lateral**
 - [x] Visualizar os dados das tabelas ao clicar
 - [x] Inserir, editar e excluir registros
